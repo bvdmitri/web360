@@ -81,8 +81,16 @@ a consumer needs presentation time rather than media-clock time.
   `stitch/stitchSample` picks the covering lens(es) and weights the overlap by each lens's margin, a
   partition of unity over the whole sphere that feathers to zero at a lens edge (ADR 0008).
   Stabilization composes by rotating the output direction before sampling (no new code).
-- Next: the WebGPU renderer (M3), the WebCodecs decode (M4), the `openRendition` API and published
-  package (M5-M6), and the cutaway swap (M7). See the session plan.
+- `stitch/renderEquirectangular` is the CPU reference compositor (the golden image for the GPU
+  shader), and `stitch/preview.test.ts` is an env-gated harness that stitches a frame of real
+  footage to a PNG. Run it on a `_00_` file with
+  `WEB360_PREVIEW_INSV=<path> WEB360_PREVIEW_OUT=<png> pnpm --filter @web360/core exec vitest run
+src/stitch/preview` (add `WEB360_PREVIEW_TINT=1` or `WEB360_PREVIEW_ONLY=0|1` to diagnose). On the
+  ONE R it now produces a registered stitch; the roll axis was found and fixed this way (ADR 0007).
+- Visible, not yet addressed: the seam is a hard feather with an exposure step between the lenses,
+  and near objects ghost from parallax. Next: seam quality in the CPU reference (exposure matching,
+  wider blend), then the WebGPU renderer (M3), WebCodecs decode (M4), `openRendition` and the
+  published package (M5-M6), and the cutaway swap (M7). See the session plan.
 
 ### Later
 
