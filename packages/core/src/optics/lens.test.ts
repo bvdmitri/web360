@@ -81,6 +81,12 @@ describe('equidistant lens optics', () => {
     );
   });
 
+  it('rolls a back lens about Y so its azimuth stays in register with the front lens', () => {
+    const back = lens({ orientation: { yaw: degrees(0), pitch: degrees(0), roll: degrees(180) } });
+    expectVecClose(unproject(back, back.center), [0, 0, -1]);
+    expect(project(back, [1, 0, 0]).pixel[0]).toBeLessThan(back.center[0]);
+  });
+
   it('reads the real ONE R calibration into a usable lens', () => {
     const reader = ByteReader.of(new Uint8Array(readFileSync(fixture)));
     const info = readTrailer(reader).records.find((record) => record.id === 1);

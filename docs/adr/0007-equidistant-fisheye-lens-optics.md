@@ -21,9 +21,13 @@ pixel samples the lenses.
   external fact as a camera's IMU frame. `LensOptics` carries it as `fieldOfView`, so a lens is
   self-describing and the optics functions need no hidden constant. The ONE R value is provisional
   and expected to be refined once the stitch is seen on real footage.
-- **The pose maps the lens frame to the camera frame** by yaw about Z, then pitch about Y, then roll
-  about X (intrinsic), built as a quaternion. Projecting a camera-frame direction rotates it into the
-  lens frame first; unprojecting a pixel rotates the recovered lens-frame direction back out.
+- **The pose maps the lens frame to the camera frame** by yaw about Z, pitch about X and roll about
+  Y, composed as a quaternion. Projecting a camera-frame direction rotates it into the lens frame
+  first; unprojecting a pixel rotates the recovered lens-frame direction back out. Roll is about Y
+  so the back lens's near-180-degree roll flips the optical axis to the far hemisphere and keeps the
+  two lenses' azimuth in register; the same roll about X would leave the hemispheres 180 degrees
+  apart. This was confirmed by stitching the real ONE R: the wrong axis put the same object at
+  opposite longitudes in the two lenses.
 - **Coverage is explicit.** A direction is covered by a lens only when its angle from the optical
   axis is within the field of view's half-angle. Projection reports coverage so the stitch can pick a
   lens and weight the overlap (ADR 0008), rather than sampling outside the fisheye circle.
@@ -33,8 +37,11 @@ pixel samples the lenses.
 - The optics are pure core, tested by round-tripping a direction through project then unproject and
   by known-angle cases, independent of any camera. Their agreement with Insta360's actual lens is a
   separate question, settled by looking at the stitch, not by a unit test.
-- The field-of-view constant and the pose convention (the Euler order, the sign of roll) are the two
-  places a wrong assumption shows up as a visibly wrong stitch; both are isolated so a correction is
-  a one-line change, and `LensProjection` stays a union that a unified or Mei model can join later.
+- The field-of-view constant and the pose convention (the axis of each angle, the Euler order) are
+  where a wrong assumption shows up as a visibly wrong stitch; both are isolated so a correction is a
+  one-line change, and `LensProjection` stays a union that a unified or Mei model can join later. The
+  roll axis was found this way; the Euler order and the small pitch and yaw axes are not yet
+  distinguished by the one ONE R calibration available (its pitch and yaw are under a degree) and
+  stay provisional until another camera or the authoritative reference pins them.
 - Acceleration, timing and stabilization are untouched here; optics is only the direction-to-pixel
   map.

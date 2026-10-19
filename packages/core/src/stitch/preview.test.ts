@@ -16,11 +16,26 @@ import { renderEquirectangular, type LensSampler, type Rgb, type Scene } from '.
 // A developer harness, not a CI test: point WEB360_PREVIEW_INSV at the `_00_` half of a real
 // Insta360 split recording and it decodes one frame from each lens with ffmpeg, CPU-renders a
 // low-resolution equirectangular stitch, and writes a PNG (via ffmpeg) for eyeballing. Skipped
-// unless the variable is set. Output goes to WEB360_PREVIEW_OUT or the temp directory.
+// unless the variable is set. Output goes to WEB360_PREVIEW_OUT or the temp directory, with the
+// parsed lens optics alongside as JSON. Diagnostics: WEB360_PREVIEW_ONLY=0|1 renders one lens alone,
+// and WEB360_PREVIEW_TINT=1 tints the lenses red and blue so the seam and its alignment show.
 const footage = process.env['WEB360_PREVIEW_INSV'];
 const OUT_WIDTH = 1024;
 const OUT_HEIGHT = 512;
 const BYTE_MAX = 255;
+const tints: Rgb[] = [
+  [1, 0.55, 0.55],
+  [0.55, 0.55, 1],
+];
+
+const black: LensSampler = () => [0, 0, 0];
+
+const tint =
+  (sampler: LensSampler, colour: Rgb): LensSampler =>
+  (pixel) => {
+    const [r, g, b] = sampler(pixel);
+    return [r * colour[0], g * colour[1], b * colour[2]];
+  };
 
 interface LensImage {
   readonly rgb: Uint8Array;
@@ -100,6 +115,14 @@ describe('stitch preview (developer harness)', () => {
       const infoRecord = readTrailer(reader).records.find((record) => record.id === 1);
       if (infoRecord === undefined) throw new Error('the recording has no info record');
       const canvas = readCalibration(readInfo(reader, infoRecord.region).calibration).canvas;
+      writeFileSync(
+        `${outPng}.json`,
+        JSON.stringify(
+          { model: recording.model, frame: recording.frame, canvas, lenses: recording.lenses },
+          undefined,
+          2,
+        ),
+      );
 
       const squareWidth = canvas[0] / recording.lenses.length;
       const scaleX = recording.frame.width / squareWidth;
@@ -123,9 +146,18 @@ describe('stitch preview (developer harness)', () => {
         }),
       ];
 
+      const only = process.env['WEB360_PREVIEW_ONLY'];
+      const chosen = samplers.map((sampler, index) =>
+        only === undefined || only === String(index) ? sampler : black,
+      );
+      const tinted =
+        process.env['WEB360_PREVIEW_TINT'] === undefined
+          ? chosen
+          : chosen.map((sampler, index) => tint(sampler, tints[index] ?? [1, 1, 1]));
+
       const scene: Scene = {
         lenses: recording.lenses,
-        samplers,
+        samplers: tinted,
         correction: identity(),
         width: OUT_WIDTH,
         height: OUT_HEIGHT,

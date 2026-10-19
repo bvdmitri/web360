@@ -58,8 +58,8 @@ export function unproject(lens: LensOptics, pixel: readonly [number, number]): V
 
 function poseOf(orientation: Orientation): Quaternion {
   const yaw = fromRotationVector([0, 0, degreesToRadians(orientation.yaw)]);
-  const pitch = fromRotationVector([0, degreesToRadians(orientation.pitch), 0]);
-  const roll = fromRotationVector([degreesToRadians(orientation.roll), 0, 0]);
+  const pitch = fromRotationVector([degreesToRadians(orientation.pitch), 0, 0]);
+  const roll = fromRotationVector([0, degreesToRadians(orientation.roll), 0]);
   return multiply(multiply(yaw, pitch), roll);
 }
 
