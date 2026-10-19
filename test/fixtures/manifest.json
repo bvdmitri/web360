@@ -1,0 +1,9 @@
+{
+  "fixtures": {
+    "insta360/oner-split-00.insv": {
+      "origin": "An Insta360 ONE R with the 5.7K 360 lens module. The back-lens file (the _00_ of a split recording), which carries the trailer.",
+      "licence": "The owner's own recording, de-identified for use as a test fixture.",
+      "covers": "The ISO base media container with three tracks (H.264 2880x2880 video, AAC audio, a timed-text metadata track) and the Insta360 contiguous trailer (info, gyro, exposure and smaller records). It is a structural extract: the picture is dropped, the thumbnails are zeroed and the serial is replaced, so it has no decodable frames and holds no faces."
+    }
+  }
+}
