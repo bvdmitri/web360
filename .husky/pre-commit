@@ -1,0 +1,2 @@
+node tools/checks/src/main.ts --staged
+pnpm exec lint-staged

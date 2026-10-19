@@ -1,0 +1,1 @@
+node tools/checks/src/main.ts --message "$1"

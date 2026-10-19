@@ -1,0 +1,10 @@
+node_modules/
+dist/
+coverage/
+.stryker-tmp/
+reports/
+*.tsbuildinfo
+.DS_Store
+# Private recordings and their catalogue stay on the developer's machine (docs/SAMPLES.md).
+samples/*
+!samples/README.md

@@ -1,0 +1,42 @@
+{
+  "name": "omnisphere-workspace",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Functions to read, analyse, stitch, stabilize and process 360 video in the browser",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@11.27.0",
+  "engines": {
+    "node": "^24 || ^26"
+  },
+  "scripts": {
+    "prepare": "husky",
+    "typecheck": "pnpm -r --parallel run typecheck",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "depcruise": "depcruise packages tools --config .dependency-cruiser.cjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:mutation": "pnpm --filter @omnisphere/core test:mutation",
+    "checks": "node tools/checks/src/main.ts --all",
+    "verify": "pnpm checks && pnpm typecheck && pnpm lint && pnpm format:check && pnpm depcruise && pnpm test:coverage"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.1",
+    "@vitest/coverage-istanbul": "4.1.11",
+    "dependency-cruiser": "18.3.1",
+    "eslint": "10.10.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-es-x": "10.0.1",
+    "eslint-plugin-unicorn": "75.0.0",
+    "husky": "9.1.7",
+    "lint-staged": "17.5.1",
+    "prettier": "3.9.8",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.70.0",
+    "vitest": "4.1.11"
+  }
+}

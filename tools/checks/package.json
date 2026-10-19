@@ -1,0 +1,16 @@
+{
+  "name": "@omnisphere/checks",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Repository checks run before every commit: private samples and foreign identifiers stay out of the history.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.1",
+    "vitest": "4.1.11"
+  }
+}
