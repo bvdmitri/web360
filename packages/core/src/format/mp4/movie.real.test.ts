@@ -24,7 +24,12 @@ describe('mp4 movie, on a real Insta360 ONE R recording', () => {
 
     const video = movie.tracks.find((track) => track.handler === 'vide');
     if (video === undefined) throw new Error('the fixture has no video track');
-    expect(video.sampleEntry).toMatchObject({ format: 'avc1', width: 2880, height: 2880 });
+    expect(video.sampleEntry).toMatchObject({
+      format: 'avc1',
+      width: 2880,
+      height: 2880,
+      codec: 'avc1.4d4034',
+    });
     expect(samplesOf(video)).toHaveLength(4299);
 
     expect(movie.tracks.some((track) => track.handler === 'soun')).toBe(true);

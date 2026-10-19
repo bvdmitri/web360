@@ -43,6 +43,21 @@ export interface LensOptics {
 }
 
 /**
+ * Where a lens's image sits in the decoded video: which video's frames hold it, and the rectangle
+ * of the calibration canvas those frames cover (`origin` and `extent` in canvas pixels).
+ *
+ * @remarks A camera that records each lens to its own file has one video per lens, each covering
+ * its lens's half of the canvas; one that records both lenses side by side has one video covering
+ * the whole canvas, shared by both lenses. A renderer binds video `texture`'s frame and maps a lens
+ * pixel into it through the rectangle.
+ */
+export interface LensImage {
+  readonly texture: number;
+  readonly origin: readonly [number, number];
+  readonly extent: readonly [number, number];
+}
+
+/**
  * One motion sample on the capture clock: a timestamped 3-vector.
  *
  * @remarks The {@link CameraRecording} field that holds the sample says what the vector is:

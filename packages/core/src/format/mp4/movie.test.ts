@@ -84,7 +84,7 @@ describe('mp4 movie', () => {
     const [track] = movie.tracks;
     if (track === undefined) throw new Error('the movie has no track');
     expect(track).toMatchObject({ id: 1, handler: 'vide', timescale: 90_000 });
-    expect(track.sampleEntry).toEqual({
+    expect(track.sampleEntry).toMatchObject({
       format: 'hvc1',
       width: 1920,
       height: 1080,

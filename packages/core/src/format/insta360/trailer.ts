@@ -37,6 +37,23 @@ export class NotInsta360Error extends Error {
   }
 }
 
+/** How many bytes at the end of a recording hold the trailer's footer. */
+export const TRAILER_FOOTER_SIZE = FOOTER_SIZE;
+
+/**
+ * How many bytes at the end of a recording the trailer spans, footer included, read from the
+ * footer alone (the last {@link TRAILER_FOOTER_SIZE} bytes, or any tail that ends the file).
+ *
+ * @remarks It lets a reader fetch only the trailer of a large file before parsing it with
+ * {@link readTrailer}. Throws {@link NotInsta360Error} when the magic is absent.
+ */
+export function trailerLength(footer: ByteReader): number {
+  const size = footer.length;
+  const magic = footer.ascii(size - MAGIC_FROM_EOF, MAGIC_SIZE);
+  if (magic !== MAGIC) throw new NotInsta360Error(magic);
+  return footer.u32le(size - TRAILER_SIZE_FROM_EOF);
+}
+
 /**
  * Reads the Insta360 trailer at the end of a recording.
  *
@@ -47,10 +64,8 @@ export class NotInsta360Error extends Error {
  */
 export function readTrailer(reader: ByteReader): Trailer {
   const size = reader.length;
-  const magic = reader.ascii(size - MAGIC_FROM_EOF, MAGIC_SIZE);
-  if (magic !== MAGIC) throw new NotInsta360Error(magic);
+  const payloadStart = size - trailerLength(reader);
   const version = reader.u32le(size - VERSION_FROM_EOF);
-  const payloadStart = size - reader.u32le(size - TRAILER_SIZE_FROM_EOF);
   const nearFooter = size - FOOTER_SIZE - HEADER_SIZE;
   const records =
     reader.u8(nearFooter + ID_OFFSET) === INDEX_ID

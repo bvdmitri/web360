@@ -32,6 +32,11 @@ malformed and refused.
 A container box's content is more boxes (for example `moov` contains `mvhd` and one `trak` per
 track; a `trak` contains `tkhd` and `mdia`). Children are walked over the parent's content range.
 
+A file of gigabytes is not read whole. The top-level boxes are walked by their headers alone (eight
+bytes, or sixteen for a 64-bit size), so finding the `moov` skips the `mdat`, which a camera may
+write before or after it (the ONE R writes `ftyp`, `mdat`, `moov`, then `free`). The `moov` is then
+read in one piece.
+
 The reader walks a half-open byte range and keeps every offset absolute within the file. Offsets
 stay absolute because a chunk offset read from a sample table later states its position against
 the start of the file, not against the box it sits in, so no translation is needed.
@@ -51,8 +56,16 @@ The `moov` box holds the movie: one `mvhd` and one `trak` per track.
   `soun` for sound. A track of any other handler (a camera's own metadata track) is left out.
 - `trak/mdia/minf/stbl/stsd`, the sample description, holds the sample entry. A visual entry names
   its codec (a four-byte code such as `hvc1` or `avc1`), its coded width and height, and, in a
-  child `hvcC` or `avcC` box, the bytes that prefix each stored NAL unit (that box's length field,
-  its low two bits plus one).
+  child `hvcC` or `avcC` box, the decoder configuration. That box's payload is what a decoder is
+  configured with, and it gives the bytes that prefix each stored NAL unit (its length field, the
+  low two bits plus one: byte 4 of `avcC`, byte 21 of `hvcC`).
+- The codec string a decoder is named by comes from the same payload. For `avcC` it is the format
+  then bytes 1 to 3 (profile, constraint flags, level) as two hex digits each: the ONE R writes
+  `avc1.4d4034` (Main profile, level 5.2). For `hvcC` it is the format, then the profile space
+  (none, `A`, `B` or `C`, the top two bits of byte 1) and profile (its low five bits), the 32
+  compatibility flags of bytes 2 to 5 bit-reversed in hex, `L` or `H` for the tier (bit 5 of byte 1)
+  with the level of byte 12, and the six constraint bytes from byte 6 in hex with trailing zero
+  bytes dropped, all joined by dots (`hvc1.1.6.L153.B0`).
 
 ## Sample tables
 

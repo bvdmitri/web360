@@ -1,4 +1,4 @@
-import type { LensOptics } from '../model/recording';
+import type { LensImage, LensOptics } from '../model/recording';
 import { lensPose } from '../optics/lens';
 import { conjugate, type Quaternion } from '../shared/math/quaternion';
 import { degreesToRadians } from '../shared/units/units';
@@ -9,20 +9,6 @@ import type { Vignetting } from './vignetting';
 const SLOT = 4;
 const UNITY: Rgb = [1, 1, 1];
 const NONE: Vignetting = { strength: 0, start: 0 };
-
-/**
- * Where a lens's image sits: which texture holds it, and the rectangle of the calibration canvas
- * that texture covers (`origin` and `extent` in canvas pixels).
- *
- * @remarks A camera that records each lens to its own file has one texture per lens, each covering
- * its lens's square of the canvas; one that records both lenses side by side has one texture
- * covering the whole canvas, shared by both lenses.
- */
-export interface LensImage {
-  readonly texture: number;
-  readonly origin: readonly [number, number];
-  readonly extent: readonly [number, number];
-}
 
 /** A lens to stitch: its optics and where its image is. */
 export interface StitchLens {
