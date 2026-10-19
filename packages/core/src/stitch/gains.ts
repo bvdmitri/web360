@@ -1,17 +1,12 @@
 import type { LensOptics } from '../model/recording';
 import type { Vector3 } from '../shared/math/quaternion';
 import { toDirection } from './equirectangular';
+import type { Grid } from './overlap';
 import { sampleLens, type LensSampler, type Rgb } from './render';
 import { stitchSample } from './sample';
 
 const PIXEL_CENTRE = 0.5;
 const UNITY: Rgb = [1, 1, 1];
-
-/** The resolution of the direction grid the overlap is sampled on. */
-export interface Grid {
-  readonly width: number;
-  readonly height: number;
-}
 
 interface Seen {
   readonly lens: number;

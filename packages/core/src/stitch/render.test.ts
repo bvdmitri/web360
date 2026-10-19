@@ -9,6 +9,7 @@ const lens = (pitch: number): LensOptics => ({
   projection: 'equidistant',
   radius: 1000,
   fieldOfView: degrees(193),
+  coverage: degrees(193),
   center: [1000, 1000],
   orientation: { yaw: degrees(0), pitch: degrees(pitch), roll: degrees(0) },
 });
@@ -49,7 +50,7 @@ describe('equirectangular render', () => {
   });
 
   it('is black where no lens covers the direction', () => {
-    const narrow: LensOptics = { ...lens(0), fieldOfView: degrees(60) };
+    const narrow: LensOptics = { ...lens(0), fieldOfView: degrees(60), coverage: degrees(60) };
     const [equator] = renderEquirectangular(
       scene({ lenses: [narrow], samplers: [constant(red)], width: 1, height: 1 }),
     );

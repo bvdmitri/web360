@@ -23,6 +23,7 @@ const lens = (overrides: Partial<LensOptics> = {}): LensOptics => ({
   projection: 'equidistant',
   radius: 1000,
   fieldOfView: degrees(193),
+  coverage: degrees(193),
   center: [1500, 1400],
   orientation: { yaw: degrees(20), pitch: degrees(-15), roll: degrees(170) },
   ...overrides,
@@ -79,6 +80,18 @@ describe('equidistant lens optics', () => {
         },
       ),
     );
+  });
+
+  it('trusts a lens past its calibration radius out to its coverage', () => {
+    const optics = lens({ fieldOfView: degrees(180), coverage: degrees(190) });
+    const pastRadius = unproject(optics, [
+      optics.center[0] + optics.radius * (93 / 90),
+      optics.center[1],
+    ]);
+    const projected = project(optics, pastRadius);
+    expect(projected.reach).toBeCloseTo(93 / 90, 9);
+    expect(projected.covered).toBe(true);
+    expect(projected.margin).toBeCloseTo((2 * Math.PI) / 180, 9);
   });
 
   it('rolls a back lens about Y so its azimuth stays in register with the front lens', () => {

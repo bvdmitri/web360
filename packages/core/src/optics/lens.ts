@@ -10,13 +10,18 @@ import {
 import { degreesToRadians } from '../shared/units/units';
 
 /**
- * Where a direction lands on a lens: its pixel, its angle from the optical axis, whether the lens
- * sees it, and how far inside the field of view it is (`margin`, the half field of view minus the
- * angle; zero at the edge, negative outside). The stitch weights the overlap by the margin.
+ * Where a direction lands on a lens: its pixel, its angle from the optical axis, how far out on the
+ * fisheye that is, whether the lens is trusted there, and by how much.
+ *
+ * @remarks `reach` is the pixel's distance from the lens centre over `radius` (equivalently the angle
+ * over half the mapping `fieldOfView`); it may exceed 1 where `coverage` is wider than the mapping.
+ * `margin` is half the `coverage` minus the angle: positive inside, zero at the edge, negative
+ * outside. The stitch weights the overlap by the margin.
  */
 export interface Projected {
   readonly pixel: readonly [number, number];
   readonly angle: number;
+  readonly reach: number;
   readonly covered: boolean;
   readonly margin: number;
 }
@@ -27,7 +32,7 @@ export interface Projected {
  * @remarks `direction` is a unit vector in the camera frame. It is rotated into the lens frame by the
  * lens pose, then mapped by the equidistant model `r = f · angle` (ADR 0007), where the angle is
  * measured from the optical axis and `f = radius / (fieldOfView / 2)`. `covered` is false when the
- * angle falls outside the field of view, so the stitch does not sample beyond the fisheye circle.
+ * angle falls outside the lens's `coverage`, so the stitch does not sample beyond the usable image.
  */
 export function project(lens: LensOptics, direction: Vector3): Projected {
   const [x, y, z] = rotate(conjugate(poseOf(lens.orientation)), direction);
@@ -35,12 +40,13 @@ export function project(lens: LensOptics, direction: Vector3): Projected {
   const azimuth = Math.atan2(y, x);
   const r = focalLength(lens) * angle;
   const [cx, cy] = lens.center;
-  const half = halfFieldOfView(lens);
+  const halfCoverage = degreesToRadians(lens.coverage) / 2;
   return {
     pixel: [cx + r * Math.cos(azimuth), cy + r * Math.sin(azimuth)],
     angle,
-    covered: angle <= half,
-    margin: half - angle,
+    reach: angle / halfFieldOfView(lens),
+    covered: angle <= halfCoverage,
+    margin: halfCoverage - angle,
   };
 }
 

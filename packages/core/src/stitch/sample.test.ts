@@ -11,6 +11,7 @@ const lens = (fovDegrees: number, pitch: number): LensOptics => ({
   projection: 'equidistant',
   radius: 1000,
   fieldOfView: degrees(fovDegrees),
+  coverage: degrees(fovDegrees),
   center: [1000, 1000],
   orientation: { yaw: degrees(0), pitch: degrees(pitch), roll: degrees(0) },
 });

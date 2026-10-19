@@ -6,9 +6,8 @@ import type { Vector3 } from '../shared/math/quaternion';
  * One lens's contribution to an output direction: which lens, where to sample it, how far out on
  * the fisheye that is, and its blend weight.
  *
- * @remarks `reach` is the angle from the optical axis as a fraction of the half field of view: 0 at
- * the lens centre, 1 at the fisheye edge. Under the equidistant model it is also the pixel's
- * distance from the centre over the fisheye radius.
+ * @remarks `reach` is the pixel's distance from the lens centre over the calibration radius: 0 at the
+ * centre, 1 at the radius, and above 1 where the lens's coverage extends past it.
  */
 export interface LensSample {
   readonly lens: number;
@@ -39,8 +38,7 @@ export function stitchSample(lenses: readonly LensOptics[], direction: Vector3):
   for (const [index, lens] of lenses.entries()) {
     const seen = project(lens, direction);
     if (!seen.covered) continue;
-    const reach = seen.angle / (seen.angle + seen.margin);
-    covered.push({ lens: index, pixel: seen.pixel, reach, margin: seen.margin });
+    covered.push({ lens: index, pixel: seen.pixel, reach: seen.reach, margin: seen.margin });
   }
   if (covered.length === 0) return [];
   const total = covered.reduce((sum, one) => sum + one.margin, 0);

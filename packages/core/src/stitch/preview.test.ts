@@ -11,8 +11,11 @@ import { readInsta360Recording } from '../format/insta360/recording';
 import { readTrailer } from '../format/insta360/trailer';
 import { ByteReader } from '../shared/binary/byteReader';
 import { identity } from '../shared/math/quaternion';
+import type { LensOptics } from '../model/recording';
+import { degrees } from '../shared/units/units';
 import { estimateGains } from './gains';
-import { devignette, estimateVignetting } from './vignetting';
+import { seamCorrelation } from './seam';
+import { devignette, estimateVignetting, type Vignetting } from './vignetting';
 import { renderEquirectangular, type LensSampler, type Rgb, type Scene } from './render';
 
 // A developer harness, not a CI test: point WEB360_PREVIEW_INSV at the `_00_` half of a real
@@ -26,6 +29,14 @@ const OUT_WIDTH = 1024;
 const OUT_HEIGHT = 512;
 const BYTE_MAX = 255;
 const GAIN_GRID = { width: 256, height: 128 };
+const SWEEP_FROM = Number(process.env['WEB360_PREVIEW_SWEEP_FROM'] ?? '186');
+const SEAM_BAND = {
+  width: 720,
+  height: 24,
+  halfAngle: (Number(process.env['WEB360_PREVIEW_BAND'] ?? '3') * Math.PI) / 180,
+};
+const SWEEP_TO = Number(process.env['WEB360_PREVIEW_SWEEP_TO'] ?? '210');
+const SWEEP_STEP = 1;
 const tints: Rgb[] = [
   [1, 0.55, 0.55],
   [0.55, 0.55, 1],
@@ -51,7 +62,20 @@ interface LensImage {
 
 const decodeFrame = (file: string, directory: string, name: string): Uint8Array => {
   const out = path.join(directory, `${name}.rgb`);
-  const decodeArguments = ['-v', 'error', '-y', '-i', file, '-map', '0:v:0', '-frames:v', '1'];
+  const at = process.env['WEB360_PREVIEW_AT'] ?? '0';
+  const decodeArguments = [
+    '-v',
+    'error',
+    '-y',
+    '-ss',
+    at,
+    '-i',
+    file,
+    '-map',
+    '0:v:0',
+    '-frames:v',
+    '1',
+  ];
   execFileSync('ffmpeg', [...decodeArguments, '-f', 'rawvideo', '-pix_fmt', 'rgb24', out]);
   return readFileSync(out);
 };
@@ -103,6 +127,62 @@ const encodePng = (bytes: Uint8Array, outPng: string): void => {
   ]);
 };
 
+const onlyChosen = (samplers: readonly LensSampler[]): LensSampler[] => {
+  const only = process.env['WEB360_PREVIEW_ONLY'];
+  return samplers.map((sampler, index) =>
+    only === undefined || only === String(index) ? sampler : black,
+  );
+};
+
+const withFieldOfView = (lenses: readonly LensOptics[], fov: number): LensOptics[] =>
+  lenses.map((one) => ({ ...one, fieldOfView: degrees(fov) }));
+
+const withFieldOfViewOverride = (lenses: readonly LensOptics[]): readonly LensOptics[] => {
+  const override = process.env['WEB360_PREVIEW_FOV'];
+  return override === undefined ? lenses : withFieldOfView(lenses, Number(override));
+};
+
+const vignettingFor = (
+  lenses: readonly LensOptics[],
+  samplers: readonly LensSampler[],
+): Vignetting =>
+  process.env['WEB360_PREVIEW_VIGNETTE'] === '0'
+    ? { strength: 0, start: 1 }
+    : estimateVignetting(lenses, samplers, GAIN_GRID);
+
+const gainsFor = (
+  lenses: readonly LensOptics[],
+  samplers: readonly LensSampler[],
+): Rgb[] | undefined =>
+  process.env['WEB360_PREVIEW_GAIN'] === '0'
+    ? undefined
+    : estimateGains(lenses, samplers, GAIN_GRID);
+
+const tintedIfAsked = (samplers: readonly LensSampler[]): readonly LensSampler[] =>
+  process.env['WEB360_PREVIEW_TINT'] === undefined
+    ? samplers
+    : samplers.map((sampler, index) => tint(sampler, tints[index] ?? [1, 1, 1]));
+
+const writeSweep = (
+  lenses: readonly LensOptics[],
+  samplers: readonly LensSampler[],
+  file: string,
+): void => {
+  const table = [];
+  for (let fov = SWEEP_FROM; fov <= SWEEP_TO; fov += SWEEP_STEP) {
+    const candidate = withFieldOfView(lenses, fov);
+    const measured = estimateVignetting(candidate, samplers, GAIN_GRID);
+    const flattened = devignette(candidate, samplers, measured);
+    table.push({
+      fov,
+      k: measured.strength,
+      start: measured.start,
+      correlation: seamCorrelation(candidate, flattened, SEAM_BAND),
+    });
+  }
+  writeFileSync(file, JSON.stringify(table, undefined, 2));
+};
+
 describe('stitch preview (developer harness)', () => {
   it.skipIf(footage === undefined)(
     'renders an equirectangular PNG from a real recording',
@@ -149,28 +229,23 @@ describe('stitch preview (developer harness)', () => {
         }),
       ];
 
-      const only = process.env['WEB360_PREVIEW_ONLY'];
-      const chosen = samplers.map((sampler, index) =>
-        only === undefined || only === String(index) ? sampler : black,
+      const chosen = onlyChosen(samplers);
+      if (process.env['WEB360_PREVIEW_SWEEP'] !== undefined) {
+        writeSweep(recording.lenses, chosen, `${outPng}.sweep.json`);
+      }
+      const lenses = withFieldOfViewOverride(recording.lenses);
+      const vignetting = vignettingFor(lenses, chosen);
+      const flat = devignette(lenses, chosen, vignetting);
+      const tinted = tintedIfAsked(flat);
+      const gains = gainsFor(lenses, flat);
+      const correlation = seamCorrelation(lenses, flat, SEAM_BAND);
+      writeFileSync(
+        `${outPng}.correction.json`,
+        JSON.stringify({ vignetting, gains, correlation }),
       );
-      const strength =
-        process.env['WEB360_PREVIEW_VIGNETTE'] === '0'
-          ? 0
-          : estimateVignetting(recording.lenses, chosen, GAIN_GRID);
-      const flat = devignette(recording.lenses, chosen, strength);
-      const tinted =
-        process.env['WEB360_PREVIEW_TINT'] === undefined
-          ? flat
-          : flat.map((sampler, index) => tint(sampler, tints[index] ?? [1, 1, 1]));
-
-      const gains =
-        process.env['WEB360_PREVIEW_GAIN'] === '0'
-          ? undefined
-          : estimateGains(recording.lenses, flat, GAIN_GRID);
-      writeFileSync(`${outPng}.correction.json`, JSON.stringify({ strength, gains }));
 
       const scene: Scene = {
-        lenses: recording.lenses,
+        lenses,
         samplers: tinted,
         correction: identity(),
         width: OUT_WIDTH,

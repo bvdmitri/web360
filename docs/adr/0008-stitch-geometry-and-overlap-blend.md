@@ -35,12 +35,16 @@ the reference the GPU shader implements.
   what each lens records over the overlap and scales each lens, per channel, onto the geometric mean,
   which removes the brightness and colour step between the lenses (on the ONE R the two disagree by
   about a quarter, differently per channel). Vignetting is corrected before that:
-  `stitch/estimateVignetting` fits a shared falloff `exp(-k * reach^2)` from how the two lenses'
-  brightness ratio varies across the overlap (one lens is nearer its rim than the other there), and
-  `stitch/devignette` flattens each lens by the inverse. The ONE R measures `k` near 0.5, a rim about
-  40 percent darker than the centre, which was the dark band left at the seam after gain matching.
-  The order matters: flatten first, then match exposure on the flattened lenses. A multiband blend
-  for edges doubled by parallax is still to come; all of these layer on the same lens selection.
+  `stitch/estimateVignetting` measures the rim falloff from how the two lenses' brightness ratio
+  varies across the overlap (one lens is nearer its rim than the other there), and
+  `stitch/devignette` lifts each lens by the inverse. The overlap only spans the rim, so the falloff
+  is applied as a hinge, `exp(-k * (reach^2 - start^2))` beyond the overlap's innermost reach and
+  nothing inside it: a single `exp(-k * reach^2)` curve extrapolated the steep rim slope into the
+  lens centre and blew the image out. The order matters: flatten first, then match exposure on the
+  flattened lenses. Both are estimated per frame here, which is noisy where the seam crosses
+  something close to the camera; for video they should be held steady across frames. A multiband
+  blend for edges doubled by parallax is still to come; all of these layer on the same lens
+  selection.
 - The geometry is frame-consistent but not yet aligned to the camera's real forward or the image's
   pixel-row order; those conventions (ADR 0007's pose, this frame) are the first things a wrong-
   looking stitch will expose, and each is an isolated constant.
