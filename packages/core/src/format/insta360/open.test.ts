@@ -119,7 +119,7 @@ describe('opening an Insta360 recording from its files', () => {
     expect(video.frames).toHaveLength(4299);
     const [first, second] = video.frames;
     expect(first).toMatchObject({ timestamp: 0, isSync: true });
-    expect(second?.timestamp).toBeCloseTo(1_000_000 / (30_000 / 1001), 0);
+    expect(second?.timestamp).toBe(Math.round(1_000_000 / (30_000 / 1001)));
     expect(opened.duration).toBeCloseTo(4299 / (30_000 / 1001), 2);
   });
 

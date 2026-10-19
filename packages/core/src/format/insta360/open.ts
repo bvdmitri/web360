@@ -121,8 +121,9 @@ async function videosOf(source: RandomAccessSource): Promise<EncodedVideo[]> {
 }
 
 function framesOf(track: Track): EncodedFrame[] {
+  // Whole microseconds, as a decoder's chunk and frame timestamps are.
   const toMicros = (time: number): Microseconds =>
-    microseconds((time * MICROS_PER_SECOND) / track.timescale);
+    microseconds(Math.round((time * MICROS_PER_SECOND) / track.timescale));
   return samplesOf(track).map((sample) => ({
     offset: sample.offset,
     size: sample.size,

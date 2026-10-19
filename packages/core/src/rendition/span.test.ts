@@ -50,6 +50,10 @@ describe('planning a span', () => {
       [1, 1],
       [2, 2],
     ]);
+    expect(span.frames.map((frame) => frame.times)).toEqual([
+      [1000, 1300],
+      [2000, 2300],
+    ]);
     expect(span.decode[1]).toEqual({ start: 0, end: 2 });
   });
 

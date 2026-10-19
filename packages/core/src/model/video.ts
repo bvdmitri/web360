@@ -15,7 +15,7 @@ export interface EncodedFrame {
  *
  * @remarks `codec` and `decoderConfig` are what a WebCodecs `VideoDecoder` is configured with (the
  * codec string and its description). `frames` come in decode order, timed on the file's media
- * clock from its first frame; the edit list is not applied.
+ * clock from its first frame in whole microseconds; the edit list is not applied.
  */
 export interface EncodedVideo {
   readonly codec: string;

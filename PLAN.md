@@ -103,8 +103,11 @@ src/stitch/preview` (add `WEB360_PREVIEW_TINT=1` or `WEB360_PREVIEW_ONLY=0|1` to
   calibration refinement that needs a rig mask and several frames.
 - `packages/adapters/webgpu` renders the stitch as a WGSL pass over the numbers
   `stitch/packStitch` lays out, tested pixel for pixel against the reference on a GPU (ADR 0012).
-  Next: WebCodecs decode (M4), `openRendition` and the published package (M5-M6), and the cutaway swap
-  (M7), with seam polish iterated from evaluation in cutaway. See the session plan.
+- A recording opens from random-access sources, reading only headers, the `moov` and the trailer
+  (ADR 0013); `rendition/` plans a span, the stabilized view and each frame's stitch (ADR 0014);
+  `packages/adapters/webcodecs` decodes a lens video with WebCodecs; and `packages/web360` is the
+  published package, `openRendition` over a `Platform` (ADR 0015). Next: build and publish `web360`
+  0.1.0 (M6), the cutaway swap (M7), and quality from evaluation (M8+).
 
 ### Later
 

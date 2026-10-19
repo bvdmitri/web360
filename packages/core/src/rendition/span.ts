@@ -1,10 +1,14 @@
 import type { EncodedVideo } from '../model/video';
 import type { Microseconds } from '../shared/units/units';
 
-/** One output frame of a span: its time in the first video and the frame of each video it uses. */
+/**
+ * One output frame of a span: its time in the first video, and the frame of each video it uses
+ * (its decode-order index and its time).
+ */
 export interface SpanFrame {
   readonly timestamp: Microseconds;
   readonly frames: readonly number[];
+  readonly times: readonly Microseconds[];
 }
 
 /** The decode-order frames of one video to feed a decoder, `start` to `end` inclusive. */
@@ -38,15 +42,24 @@ export function planSpan(
     (entry) => entry.timestamp >= window.from && entry.timestamp < window.to,
   );
   const columns = [
-    shown.map((entry) => entry.index),
+    shown,
     ...others.map((order) => shown.map((entry) => nearest(order, entry.timestamp))),
   ];
   return {
-    frames: shown.map((entry, row) => ({
-      timestamp: entry.timestamp,
-      frames: columns.map((column) => column[row] ?? entry.index),
-    })),
-    decode: videos.map((video, which) => rangeFor(video, columns[which] ?? [])),
+    frames: shown.map((entry, row) => {
+      const paired = columns.map((column) => column[row] ?? entry);
+      return {
+        timestamp: entry.timestamp,
+        frames: paired.map((one) => one.index),
+        times: paired.map((one) => one.timestamp),
+      };
+    }),
+    decode: videos.map((video, which) =>
+      rangeFor(
+        video,
+        (columns[which] ?? []).map((one) => one.index),
+      ),
+    ),
   };
 }
 
@@ -61,13 +74,16 @@ function byTime(video: EncodedVideo): Timed[] {
     .toSorted((a, b) => a.timestamp - b.timestamp);
 }
 
-function nearest(order: readonly Timed[], time: number): number {
-  let best = { index: 0, distance: Infinity };
+function nearest(order: readonly Timed[], time: Microseconds): Timed {
+  let best: Timed = { index: 0, timestamp: time };
+  let closest = Infinity;
   for (const entry of order) {
     const distance = Math.abs(entry.timestamp - time);
-    if (distance < best.distance) best = { index: entry.index, distance };
+    if (distance >= closest) continue;
+    best = entry;
+    closest = distance;
   }
-  return best.index;
+  return best;
 }
 
 function rangeFor(video: EncodedVideo, needed: readonly number[]): DecodeRange {
