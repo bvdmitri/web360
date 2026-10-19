@@ -87,10 +87,22 @@ a consumer needs presentation time rather than media-clock time.
   `WEB360_PREVIEW_INSV=<path> WEB360_PREVIEW_OUT=<png> pnpm --filter @web360/core exec vitest run
 src/stitch/preview` (add `WEB360_PREVIEW_TINT=1` or `WEB360_PREVIEW_ONLY=0|1` to diagnose). On the
   ONE R it now produces a registered stitch; the roll axis was found and fixed this way (ADR 0007).
-- Visible, not yet addressed: the seam is a hard feather with an exposure step between the lenses,
-  and near objects ghost from parallax. Next: seam quality in the CPU reference (exposure matching,
-  wider blend), then the WebGPU renderer (M3), WebCodecs decode (M4), `openRendition` and the
-  published package (M5-M6), and the cutaway swap (M7). See the session plan.
+- The ONE R's field of view (183 degrees) and trusted coverage (188) were measured from footage
+  (ADR 0007). `stitch/estimateGains` matches each lens's exposure onto the overlap and
+  `stitch/estimateVignetting` with `devignette` flattens the falloff beyond the overlap's start (ADR
+  0008). `stitch/seamCorrelation` and `stitch/refineCalibration` score and refine the calibration on
+  a frame (ADR 0009); on real footage the helmet's parallax keeps the refinement from settling, so
+  the measured values stand.
+- The IMU-to-camera rotation (`CameraRecording.imuToCamera`) and the frame timing on the motion
+  clock were measured from footage (ADR 0010), so a stabilized stitch holds the world still;
+  `motion/outputToCamera` composes the view. `smoothHeading` runs both ways, so it has no lag (ADR
+  0006).
+- `stitch/rollingShutter` corrects each row for the turn made during the 22 ms readout, and the
+  stitch takes it as a `Shutter` (ADR 0011). The order was chosen by modest evidence.
+- Visible, not yet addressed: a thin seam line, near-field parallax (helmet, canopy), and a
+  calibration refinement that needs a rig mask and several frames. Next: the WebGPU renderer (M3),
+  WebCodecs decode (M4), `openRendition` and the published package (M5-M6), and the cutaway swap
+  (M7), with seam polish iterated from evaluation in cutaway. See the session plan.
 
 ### Later
 
