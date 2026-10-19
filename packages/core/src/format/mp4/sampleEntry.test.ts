@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ByteReader } from '../../shared/binary/byteReader';
 import { readBox } from './box';
-import { readVisualSampleEntry } from './sampleEntry';
+import { readSampleFormat, readVisualSampleEntry } from './sampleEntry';
 
 const ascii = (text: string): number[] => Array.from(text, (c) => c.codePointAt(0) ?? 0);
 const u16be = (n: number): number[] => [(n >>> 8) & 0xff, n & 0xff];
@@ -69,5 +69,11 @@ describe('mp4 sample entry', () => {
     const entry = visualEntry('mp4v', [640, 480], []);
     const [r, b] = open(fullBox('stsd', [...u32be(1), ...entry]));
     expect(readVisualSampleEntry(r, b).nalLengthSize).toBe(0);
+  });
+
+  it('reads the sample format of any track, including a data track', () => {
+    const entry = box('gpmd', [...zeros(6), ...u16be(1)]);
+    const [r, b] = open(fullBox('stsd', [...u32be(1), ...entry]));
+    expect(readSampleFormat(r, b)).toBe('gpmd');
   });
 });

@@ -28,5 +28,7 @@ describe('mp4 movie, on a real GoPro MAX .360', () => {
     if (first === undefined) throw new Error('no video track');
     expect(first.sampleEntry).toMatchObject({ format: 'hvc1', width: 5888, height: 1920 });
     expect(samplesOf(first)).toHaveLength(6682);
+
+    expect(movie.tracks.some((track) => track.format === 'gpmd')).toBe(true);
   });
 });

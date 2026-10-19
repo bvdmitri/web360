@@ -25,16 +25,25 @@ export interface VisualSampleEntry {
   readonly nalLengthSize: number;
 }
 
+/** The four-character format of a track's first sample entry (`hvc1`, `avc1`, `mp4a`, `gpmd`, ...). */
+export function readSampleFormat(reader: ByteReader, stsd: Box): string {
+  return firstEntry(reader, stsd).type;
+}
+
 /** Reads the first sample entry of a video track's `stsd` box as a visual entry. */
 export function readVisualSampleEntry(reader: ByteReader, stsd: Box): VisualSampleEntry {
-  const { fieldsStart } = readFullBox(reader, stsd);
-  const entry = readBox(reader, fieldsStart + ENTRY_COUNT, stsd.end);
+  const entry = firstEntry(reader, stsd);
   return {
     format: entry.type,
     width: reader.u16be(entry.payloadStart + SAMPLE_ENTRY_WIDTH),
     height: reader.u16be(entry.payloadStart + SAMPLE_ENTRY_HEIGHT),
     nalLengthSize: nalLengthSize(reader, entry),
   };
+}
+
+function firstEntry(reader: ByteReader, stsd: Box): Box {
+  const { fieldsStart } = readFullBox(reader, stsd);
+  return readBox(reader, fieldsStart + ENTRY_COUNT, stsd.end);
 }
 
 function nalLengthSize(reader: ByteReader, entry: Box): number {

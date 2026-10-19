@@ -103,8 +103,15 @@ describe('mp4 movie', () => {
     ]);
   });
 
-  it('reads a sound track with no visual sample entry', () => {
-    const stbl = box('stbl', [...stts(1, 1024), ...stsz([512]), ...stsc(1), ...co64(40_000)]);
+  it('reads a sound track with its format but no visual sample entry', () => {
+    const stsd = fullBox('stsd', 0, [...u32be(1), ...box('mp4a', [...zeros(6), ...u16be(1)])]);
+    const stbl = box('stbl', [
+      ...stsd,
+      ...stts(1, 1024),
+      ...stsz([512]),
+      ...stsc(1),
+      ...co64(40_000),
+    ]);
     const mdia = box('mdia', [...mdhd(48_000), ...hdlr('soun'), ...box('minf', [...stbl])]);
     const trak = box('trak', [...tkhd(2), ...mdia]);
     const movie = open(box('moov', [...mvhd(1000), ...trak]));
@@ -112,6 +119,7 @@ describe('mp4 movie', () => {
     const [track] = movie.tracks;
     if (track === undefined) throw new Error('the movie has no track');
     expect(track.handler).toBe('soun');
+    expect(track.format).toBe('mp4a');
     expect(track.sampleEntry).toBeUndefined();
     expect(samplesOf(track)).toHaveLength(1);
   });

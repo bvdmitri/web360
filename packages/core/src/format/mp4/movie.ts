@@ -1,7 +1,7 @@
 import type { ByteReader } from '../../shared/binary/byteReader';
 import { boxesIn, findBox, payloadOf, type Box, type Region } from './box';
 import { readHandlerType, readTimescale, readTrackId } from './movieHeader';
-import { readVisualSampleEntry, type VisualSampleEntry } from './sampleEntry';
+import { readSampleFormat, readVisualSampleEntry, type VisualSampleEntry } from './sampleEntry';
 import {
   readChunkOffsets32,
   readChunkOffsets64,
@@ -28,6 +28,7 @@ export interface Track {
   readonly id: number;
   readonly handler: string;
   readonly timescale: number;
+  readonly format: string;
   readonly sampleEntry: VisualSampleEntry | undefined;
   readonly tables: SampleTables;
 }
@@ -74,12 +75,14 @@ function readTrack(reader: ByteReader, trak: Box): Track {
   const mdia = payloadOf(mustFind(reader, trakRegion, 'mdia'));
   const minf = payloadOf(mustFind(reader, mdia, 'minf'));
   const stbl = mustFind(reader, minf, 'stbl');
+  const stsd = mustFind(reader, payloadOf(stbl), 'stsd');
   const handler = readHandlerType(reader, mustFind(reader, mdia, 'hdlr'));
   return {
     id: readTrackId(reader, mustFind(reader, trakRegion, 'tkhd')),
     handler,
     timescale: readTimescale(reader, mustFind(reader, mdia, 'mdhd')),
-    sampleEntry: videoEntry(reader, handler, stbl),
+    format: readSampleFormat(reader, stsd),
+    sampleEntry: handler === VIDEO_HANDLER ? readVisualSampleEntry(reader, stsd) : undefined,
     tables: readSampleTables(reader, stbl),
   };
 }
@@ -87,12 +90,6 @@ function readTrack(reader: ByteReader, trak: Box): Track {
 /** Places and times a track's samples on its media clock, expanded on demand. */
 export function samplesOf(track: Track): Sample[] {
   return buildSamples(track.tables);
-}
-
-function videoEntry(reader: ByteReader, handler: string, stbl: Box): VisualSampleEntry | undefined {
-  return handler === VIDEO_HANDLER
-    ? readVisualSampleEntry(reader, mustFind(reader, payloadOf(stbl), 'stsd'))
-    : undefined;
 }
 
 function readSampleTables(reader: ByteReader, stbl: Box): SampleTables {
