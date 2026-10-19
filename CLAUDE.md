@@ -20,6 +20,7 @@ is (rule 5).
 
 | Topic                                          | Document                                           |
 | ---------------------------------------------- | -------------------------------------------------- |
+| Where the work stands and what is next         | [PLAN.md](./PLAN.md)                               |
 | Layers, packages, dependency rules, public API | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)     |
 | Private samples and committed fixtures         | [docs/SAMPLES.md](./docs/SAMPLES.md)               |
 | File formats, one per vendor                   | `docs/FORMAT-<vendor>.md` (added with each reader) |
