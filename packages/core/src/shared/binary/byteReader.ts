@@ -86,15 +86,20 @@ export class ByteReader {
 
   /** An unsigned 64-bit little-endian value; throws a `RangeError` above 2^53 - 1. */
   public u64le(offset: number): number {
-    const value = this.u64leBig(offset);
-    if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
-      throw new RangeError(`u64 at ${offset} exceeds the exact range of a number`);
-    }
-    return Number(value);
+    return this.exactU64(this.u64leBig(offset), offset);
   }
 
   public u64leBig(offset: number): bigint {
     return this.view.getBigUint64(this.checked(offset, U64), true);
+  }
+
+  /** An unsigned 64-bit big-endian value; throws a `RangeError` above 2^53 - 1. */
+  public u64be(offset: number): number {
+    return this.exactU64(this.u64beBig(offset), offset);
+  }
+
+  public u64beBig(offset: number): bigint {
+    return this.view.getBigUint64(this.checked(offset, U64), false);
   }
 
   public f32le(offset: number): number {
@@ -119,6 +124,13 @@ export class ByteReader {
   /** A reader over `length` bytes from `offset`, whose offsets count from that start. */
   public slice(offset: number, length: number): ByteReader {
     return ByteReader.of(this.bytes(offset, length));
+  }
+
+  private exactU64(value: bigint, offset: number): number {
+    if (value > BigInt(Number.MAX_SAFE_INTEGER)) {
+      throw new RangeError(`u64 at ${offset} exceeds the exact range of a number`);
+    }
+    return Number(value);
   }
 
   private checked(offset: number, length: number): number {

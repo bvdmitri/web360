@@ -34,6 +34,15 @@ describe('ByteReader', () => {
     expect(r.u64leBig(0)).toBe(0xff_ff_ff_ff_ff_ff_ff_ffn);
   });
 
+  it('reads 64-bit big-endian, as a number when exact and always as a bigint', () => {
+    const r = reader(0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06);
+    expect(r.u64be(0)).toBe(0x00_00_01_02_03_04_05_06);
+    expect(r.u64beBig(0)).toBe(0x00_00_01_02_03_04_05_06n);
+    const big = reader(0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff);
+    expect(() => big.u64be(0)).toThrow('u64 at 0 exceeds the exact range of a number');
+    expect(big.u64beBig(0)).toBe(0xff_ff_ff_ff_ff_ff_ff_ffn);
+  });
+
   it('reads 2^53 - 1 exactly and refuses one more', () => {
     const view = new DataView(new ArrayBuffer(16));
     view.setBigUint64(0, BigInt(Number.MAX_SAFE_INTEGER), true);
@@ -80,6 +89,7 @@ describe('ByteReader', () => {
         expect(r.u32be(offset)).toBe(view.getUint32(offset, false));
         expect(r.i32le(offset)).toBe(view.getInt32(offset, true));
         expect(r.u64leBig(offset)).toBe(view.getBigUint64(offset, true));
+        expect(r.u64beBig(offset)).toBe(view.getBigUint64(offset, false));
         expect(Object.is(r.f64le(offset), view.getFloat64(offset, true))).toBe(true);
       }),
     );
