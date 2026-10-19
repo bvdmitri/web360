@@ -1,7 +1,7 @@
 import type { LensOptics } from '../model/recording';
 import { rotate, type Quaternion, type Vector3 } from '../shared/math/quaternion';
 import { toDirection } from './equirectangular';
-import { stitchSample } from './sample';
+import { stitchSample, type Shutter } from './sample';
 
 const PIXEL_CENTRE = 0.5;
 const BLACK: Rgb = [0, 0, 0];
@@ -19,6 +19,7 @@ export type LensSampler = (pixel: readonly [number, number]) => Rgb;
  *
  * @remarks `gains` optionally scales each lens's colour per channel before blending, so the lenses
  * agree across the seam (see {@link estimateGains}); a lens without a gain is left as recorded.
+ * `shutter` optionally corrects rolling shutter, per lens and row (see {@link Shutter}).
  */
 export interface Scene {
   readonly lenses: readonly LensOptics[];
@@ -27,6 +28,7 @@ export interface Scene {
   readonly width: number;
   readonly height: number;
   readonly gains?: readonly Rgb[];
+  readonly shutter?: Shutter;
 }
 
 /**
@@ -64,7 +66,7 @@ export function sampleLens(
 
 function colourAt(scene: Scene, direction: Vector3): Rgb {
   const accumulator: [number, number, number] = [0, 0, 0];
-  for (const contribution of stitchSample(scene.lenses, direction)) {
+  for (const contribution of stitchSample(scene.lenses, direction, scene.shutter)) {
     const colour = sampleLens(scene.samplers, contribution.lens, contribution.pixel);
     const gain = scene.gains?.[contribution.lens] ?? UNITY;
     accumulator[0] += contribution.weight * colour[0] * gain[0];

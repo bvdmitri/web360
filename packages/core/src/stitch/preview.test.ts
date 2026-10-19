@@ -30,11 +30,13 @@ import {
 } from '../motion/stabilize';
 import { outputToCamera } from '../motion/view';
 import { ByteReader } from '../shared/binary/byteReader';
-import { identity, multiply, type Quaternion } from '../shared/math/quaternion';
+import { conjugate, identity, multiply, type Quaternion } from '../shared/math/quaternion';
 import { degrees, seconds } from '../shared/units/units';
 import { refineCalibration } from './calibrate';
+import { rollingShutter } from './rollingShutter';
 import { estimateGains } from './gains';
 import { renderEquirectangular, type LensSampler, type Rgb } from './render';
+import type { Shutter } from './sample';
 import { seamCorrelation } from './seam';
 import { devignette, estimateVignetting, type Vignetting } from './vignetting';
 
@@ -55,6 +57,7 @@ const setting = (name: string): string | undefined => process.env[`WEB360_PREVIE
 const STILL = { width: 1024, height: 512, decode: 2880 };
 const CLIP = { width: 768, height: 384, decode: 960 };
 const SEARCH = { width: 160, height: 80, decode: 720 };
+const TEMPORAL = { width: 640, height: 320, decode: 1440 };
 const VIDEO_FPS = 30_000 / 1001;
 const MICROS = 1_000_000;
 const BYTE_MAX = 255;
@@ -98,6 +101,7 @@ interface Frame {
   readonly rotation: Quaternion;
   readonly width: number;
   readonly height: number;
+  readonly shutter?: Shutter;
 }
 
 const loadSource = (insv00: string, directory: string): Source => {
@@ -231,6 +235,7 @@ const renderWith = (
     width: frame.width,
     height: frame.height,
     ...(corrections.gains !== undefined && { gains: corrections.gains }),
+    ...(frame.shutter !== undefined && { shutter: frame.shutter }),
   });
 };
 
@@ -370,6 +375,119 @@ const searchImu = (source: Source, at: number, outBase: string): void => {
   writeFileSync(`${outBase}.imu.json`, JSON.stringify(ranking, undefined, 2));
 };
 
+interface ShutterOption {
+  readonly axis: 'x' | 'y';
+  readonly directions: readonly [number, number];
+  readonly reference: number;
+}
+
+const parseShutter = (text: string): ShutterOption => {
+  const [axis, first, second, reference] = text.split(',', 4);
+  return {
+    axis: axis === 'x' ? 'x' : 'y',
+    directions: [Number(first ?? '1'), Number(second ?? '1')],
+    reference: Number(reference ?? '0.5'),
+  };
+};
+
+const shutterFor = (
+  source: Source,
+  attitude: readonly OrientationSample[],
+  context: { readonly at: number; readonly option: ShutterOption },
+): Shutter => {
+  const frameTime = timeOf(source, context.at);
+  const atFrame = rotationAt(attitude, frameTime, (sample) => sample.orientation);
+  const imu = source.recording.imuToCamera;
+  const readout = source.recording.rollingShutter * MICROS;
+  const squareWidth = source.canvas[0] / source.recording.lenses.length;
+  const height = source.canvas[1];
+  return (lens, pixel) => {
+    const direction = context.option.directions[lens] ?? 1;
+    const along =
+      context.option.axis === 'y'
+        ? pixel[1] / height
+        : (pixel[0] - lens * squareWidth) / squareWidth;
+    const time = frameTime + direction * (along - context.option.reference) * readout;
+    const atRow = rotationAt(attitude, time, (sample) => sample.orientation);
+    const turnInImu = multiply(conjugate(atRow), atFrame);
+    return multiply(multiply(imu, turnInImu), conjugate(imu));
+  };
+};
+
+const attitudeCache = new Map<Source, readonly OrientationSample[]>();
+const attitudeFor = (source: Source, motion: Motion | undefined): readonly OrientationSample[] => {
+  const known = motion?.attitude ?? attitudeCache.get(source);
+  if (known !== undefined) return known;
+  const fused = fuseOrientation(source.recording.angularVelocity, source.recording.acceleration);
+  attitudeCache.set(source, fused);
+  return fused;
+};
+
+const shutterAt = (source: Source, motion: Motion | undefined, at: number): Shutter | undefined => {
+  const text = setting('SHUTTER');
+  if (text === 'off' || (text === undefined && motion === undefined)) return undefined;
+  const attitude = attitudeFor(source, motion);
+  return text === undefined
+    ? rollingShutter({
+        attitude,
+        imuToCamera: source.recording.imuToCamera,
+        frameTime: timeOf(source, at),
+        readout: source.recording.rollingShutter,
+        rows: source.canvas[1],
+      })
+    : shutterFor(source, attitude, { at, option: parseShutter(text) });
+};
+
+const SHUTTER_CANDIDATES: readonly (ShutterOption | undefined)[] = [
+  undefined,
+  ...(['y', 'x'] as const).flatMap((axis) =>
+    (
+      [
+        [1, 1],
+        [-1, -1],
+        [1, -1],
+        [-1, 1],
+      ] as const
+    ).map((directions) => ({ axis, directions, reference: 0.5 })),
+  ),
+];
+
+const searchShutter = (source: Source, at: number, outBase: string): void => {
+  const decode = { count: 2, size: TEMPORAL.decode };
+  const [first0, second0] = decodeFrames(source.insv00, at, decode);
+  const [first1, second1] = decodeFrames(source.insv10, at, decode);
+  if (
+    first0 === undefined ||
+    second0 === undefined ||
+    first1 === undefined ||
+    second1 === undefined
+  ) {
+    throw new Error('could not decode two consecutive frames');
+  }
+  const first = onlyChosen(samplersFor(source, [first0, first1], TEMPORAL.decode));
+  const second = onlyChosen(samplersFor(source, [second0, second1], TEMPORAL.decode));
+  const lenses = source.recording.lenses;
+  const corrections = correctionsFor(lenses, first);
+  const attitude = attitudeFor(source, undefined);
+  const orientationAt = (time: number): Quaternion =>
+    rotationAt(attitude, timeOf(source, time), (sample) => sample.orientation);
+  const reference = orientationAt(at);
+  const imu = source.recording.imuToCamera;
+  const frameFor = (time: number, option: ShutterOption | undefined): Frame => ({
+    rotation: outputToCamera(imu, orientationAt(time), reference),
+    width: TEMPORAL.width,
+    height: TEMPORAL.height,
+    ...(option !== undefined && { shutter: shutterFor(source, attitude, { at: time, option }) }),
+  });
+  const later = at + 1 / VIDEO_FPS;
+  const ranking = SHUTTER_CANDIDATES.map((option) => {
+    const a = renderWith(lenses, first, { corrections, frame: frameFor(at, option) });
+    const b = renderWith(lenses, second, { corrections, frame: frameFor(later, option) });
+    return { option: option ?? 'off', stillness: luminanceCorrelation(a, b) };
+  });
+  ranking.sort((left, right) => right.stillness - left.stillness);
+  writeFileSync(`${outBase}.shutter.json`, JSON.stringify(ranking, undefined, 2));
+};
 const renderClip = (
   source: Source,
   motion: Motion | undefined,
@@ -386,8 +504,11 @@ const renderClip = (
     if (frame1 === undefined) break;
     const samplers = onlyChosen(samplersFor(source, [frame0, frame1], CLIP.decode));
     corrections ??= correctionsFor(lenses, samplers);
-    const rotation = rotationFor(source, motion, context.at + index / VIDEO_FPS);
-    const pixels = renderWith(lenses, samplers, { corrections, frame: { rotation, ...CLIP } });
+    const time = context.at + index / VIDEO_FPS;
+    const rotation = rotationFor(source, motion, time);
+    const shutter = shutterAt(source, motion, time);
+    const frame = { rotation, ...CLIP, ...(shutter !== undefined && { shutter }) };
+    const pixels = renderWith(lenses, samplers, { corrections, frame });
     appendFileSync(raw, toBytes(pixels));
   }
   encode(raw, CLIP, context.out);
@@ -408,7 +529,12 @@ const renderStill = (
     SEAM_BAND,
   );
   writeFileSync(`${context.out}.correction.json`, JSON.stringify({ ...corrections, correlation }));
-  const frame = { rotation: rotationFor(source, motion, context.at), ...STILL };
+  const shutter = shutterAt(source, motion, context.at);
+  const frame = {
+    rotation: rotationFor(source, motion, context.at),
+    ...STILL,
+    ...(shutter !== undefined && { shutter }),
+  };
   const raw = `${context.out}.rgb`;
   writeFileSync(raw, toBytes(renderWith(lenses, samplers, { corrections, frame })));
   encode(raw, STILL, context.out);
@@ -443,6 +569,7 @@ describe('stitch preview (developer harness)', () => {
       const at = Number(setting('AT') ?? '0');
       if (setting('MOTION_SCAN') !== undefined) scanMotion(source, out);
       if (setting('IMU_SEARCH') !== undefined) searchImu(source, at, out);
+      if (setting('SHUTTER_SEARCH') !== undefined) searchShutter(source, at, out);
       const motion = motionFor(source.recording);
       const clip = setting('CLIP');
       const target = clip === undefined ? out : out.replace(/\.png$/u, '.mp4');

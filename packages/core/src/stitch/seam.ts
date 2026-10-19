@@ -1,7 +1,7 @@
 import type { LensOptics } from '../model/recording';
 import { toDirection } from './equirectangular';
 import { sampleLens, type LensSampler, type Rgb } from './render';
-import { stitchSample } from './sample';
+import { stitchSample, type Shutter } from './sample';
 
 const PIXEL_CENTRE = 0.5;
 const HALF_PI = Math.PI / 2;
@@ -9,12 +9,14 @@ const CHANNELS = 3;
 
 /**
  * A thin band of directions straddling the equator of the output frame: `width` longitudes by
- * `height` latitudes, spanning `halfAngle` radians either side.
+ * `height` latitudes, spanning `halfAngle` radians either side, optionally sampled through a
+ * rolling-shutter correction.
  */
 export interface Band {
   readonly width: number;
   readonly height: number;
   readonly halfAngle: number;
+  readonly shutter?: Shutter;
 }
 
 interface Pair {
@@ -51,7 +53,7 @@ export function seamCorrelation(
         (x + PIXEL_CENTRE) / band.width,
         (HALF_PI - latitude) / Math.PI,
       );
-      pairs.push(...pairAt(lenses, samplers, direction));
+      pairs.push(...pairAt(lenses, samplers, { direction, shutter: band.shutter }));
     }
   }
   return (correlation(pairs) * pairs.length) / (band.width * band.height);
@@ -60,9 +62,12 @@ export function seamCorrelation(
 function pairAt(
   lenses: readonly LensOptics[],
   samplers: readonly LensSampler[],
-  direction: readonly [number, number, number],
+  probe: {
+    readonly direction: readonly [number, number, number];
+    readonly shutter: Shutter | undefined;
+  },
 ): Pair[] {
-  const [first, second] = stitchSample(lenses, direction);
+  const [first, second] = stitchSample(lenses, probe.direction, probe.shutter);
   if (first === undefined || second === undefined) return [];
   const a = luminance(sampleLens(samplers, first.lens, first.pixel));
   const b = luminance(sampleLens(samplers, second.lens, second.pixel));

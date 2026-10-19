@@ -1,6 +1,17 @@
 import type { LensOptics } from '../model/recording';
-import { project } from '../optics/lens';
-import type { Vector3 } from '../shared/math/quaternion';
+import { project, type Projected } from '../optics/lens';
+import { rotate, type Quaternion, type Vector3 } from '../shared/math/quaternion';
+
+/**
+ * The extra turn a lens's image row was exposed with, relative to the frame's moment.
+ *
+ * @remarks A rolling-shutter sensor reads its rows out one after another, so a camera turning
+ * during readout sees each row from a slightly different attitude. Given a lens index and a pixel (in
+ * calibration-canvas pixels), this returns the rotation that takes a camera-frame direction at the
+ * frame's moment to the same direction at the moment that pixel's row was read. Which coordinate
+ * the rows run along, and in which order, is the sensor's and is left to the caller.
+ */
+export type Shutter = (lens: number, pixel: readonly [number, number]) => Quaternion;
 
 /**
  * One lens's contribution to an output direction: which lens, where to sample it, how far out on
@@ -31,12 +42,22 @@ interface Covered {
  * lens contributes, weighted by how far inside its field of view the direction sits (its margin),
  * so the weights sum to one and feather to zero at a lens's edge, handing off smoothly across the
  * seam. A direction no lens covers returns nothing (a hole). Samples come in lens order. Exposure
- * and vignetting are corrected on the lens colours, not here (ADR 0008).
+ * and vignetting are corrected on the lens colours, not here (ADR 0008). With a `shutter`, each lens
+ * is sampled where the direction pointed when that lens's row was exposed: projected once at the
+ * frame's moment to find the row, then again through that row's turn.
  */
-export function stitchSample(lenses: readonly LensOptics[], direction: Vector3): LensSample[] {
+export function stitchSample(
+  lenses: readonly LensOptics[],
+  direction: Vector3,
+  shutter?: Shutter,
+): LensSample[] {
   const covered: Covered[] = [];
   for (const [index, lens] of lenses.entries()) {
-    const seen = project(lens, direction);
+    const seen = lookThrough(
+      lens,
+      direction,
+      shutter === undefined ? undefined : (pixel): Quaternion => shutter(index, pixel),
+    );
     if (!seen.covered) continue;
     covered.push({ lens: index, pixel: seen.pixel, reach: seen.reach, margin: seen.margin });
   }
@@ -48,4 +69,13 @@ export function stitchSample(lenses: readonly LensOptics[], direction: Vector3):
     reach: one.reach,
     weight: total > 0 ? one.margin / total : 1 / covered.length,
   }));
+}
+
+function lookThrough(
+  lens: LensOptics,
+  direction: Vector3,
+  turnAt: ((pixel: readonly [number, number]) => Quaternion) | undefined,
+): Projected {
+  const atFrame = project(lens, direction);
+  return turnAt === undefined ? atFrame : project(lens, rotate(turnAt(atFrame.pixel), direction));
 }
