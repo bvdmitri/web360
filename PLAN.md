@@ -76,9 +76,13 @@ a consumer needs presentation time rather than media-clock time.
 - `optics/lens` projects a camera-frame direction to a lens pixel and back for the Insta360
   equidistant fisheye model (ADR 0007), from the calibration's radius, centre and pose plus a
   per-model field of view the reader supplies (the v1 string carries none; the ONE R value is
-  provisional, refined on visual evaluation). Next: the stitch geometry (equirectangular direction
-  to stabilized ray to lens selection and overlap blend), then the WebGPU renderer, the WebCodecs
-  decode, the `openRendition` API, the published package, and the cutaway swap. See the session plan.
+  provisional, refined on visual evaluation).
+- `stitch/equirectangular` maps an output coordinate to a unit direction and back, and
+  `stitch/stitchSample` picks the covering lens(es) and weights the overlap by each lens's margin, a
+  partition of unity over the whole sphere that feathers to zero at a lens edge (ADR 0008).
+  Stabilization composes by rotating the output direction before sampling (no new code).
+- Next: the WebGPU renderer (M3), the WebCodecs decode (M4), the `openRendition` API and published
+  package (M5-M6), and the cutaway swap (M7). See the session plan.
 
 ### Later
 

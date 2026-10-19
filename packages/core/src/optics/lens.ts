@@ -9,11 +9,16 @@ import {
 } from '../shared/math/quaternion';
 import { degreesToRadians } from '../shared/units/units';
 
-/** Where a direction lands on a lens: its pixel, its angle from the optical axis, and whether the lens sees it. */
+/**
+ * Where a direction lands on a lens: its pixel, its angle from the optical axis, whether the lens
+ * sees it, and how far inside the field of view it is (`margin`, the half field of view minus the
+ * angle; zero at the edge, negative outside). The stitch weights the overlap by the margin.
+ */
 export interface Projected {
   readonly pixel: readonly [number, number];
   readonly angle: number;
   readonly covered: boolean;
+  readonly margin: number;
 }
 
 /**
@@ -30,10 +35,12 @@ export function project(lens: LensOptics, direction: Vector3): Projected {
   const azimuth = Math.atan2(y, x);
   const r = focalLength(lens) * angle;
   const [cx, cy] = lens.center;
+  const half = halfFieldOfView(lens);
   return {
     pixel: [cx + r * Math.cos(azimuth), cy + r * Math.sin(azimuth)],
     angle,
-    covered: angle <= halfFieldOfView(lens),
+    covered: angle <= half,
+    margin: half - angle,
   };
 }
 
