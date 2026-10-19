@@ -8,23 +8,41 @@
   "sideEffects": false,
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
+    "build": "tsdown",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepublishOnly": "pnpm build"
   },
   "dependencies": {
-    "@web360/core": "workspace:*",
-    "@web360/webcodecs": "workspace:*",
-    "@web360/webgpu": "workspace:*"
+    "@webgpu/types": "0.1.74"
   },
   "devDependencies": {
     "@types/node": "26.6.1",
-    "@webgpu/types": "0.1.74",
+    "@web360/core": "workspace:*",
+    "@web360/webcodecs": "workspace:*",
+    "@web360/webgpu": "workspace:*",
+    "tsdown": "0.23.0",
     "vitest": "4.1.11",
     "webgpu": "0.6.1"
+  },
+  "keywords": [
+    "360",
+    "equirectangular",
+    "stitch",
+    "stabilization",
+    "insta360",
+    "webgpu",
+    "webcodecs"
+  ],
+  "engines": {
+    "node": ">=20"
   }
 }
