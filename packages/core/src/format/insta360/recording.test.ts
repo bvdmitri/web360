@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { ByteReader } from '../../shared/binary/byteReader';
+import { rotate } from '../../shared/math/quaternion';
 import { readInsta360Recording } from './recording';
 
 const MAGIC = '8db42d694ccc418790edff439fe026bf';
@@ -49,5 +50,9 @@ describe('insta360 recording', () => {
     expect(recording.rollingShutter).toBeGreaterThan(0.022);
     expect(recording.rollingShutter).toBeLessThan(0.023);
     expect(recording.captureClock).toBe(3_401_538);
+    const imuUp = rotate(recording.imuToCamera, [0, 0, 1]);
+    expect(imuUp[0]).toBeCloseTo(0, 9);
+    expect(imuUp[1]).toBeCloseTo(1, 9);
+    expect(imuUp[2]).toBeCloseTo(0, 9);
   });
 });

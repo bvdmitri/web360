@@ -1,5 +1,6 @@
 import type { CameraRecording, LensOptics } from '../../model/recording';
 import type { ByteReader } from '../../shared/binary/byteReader';
+import { fromRotationVector } from '../../shared/math/quaternion';
 import { degrees, microseconds, seconds } from '../../shared/units/units';
 import type { Region } from '../mp4/box';
 import { readCalibration, type LensPose } from './calibration';
@@ -23,6 +24,11 @@ const COVERAGE_DEGREES = 188;
 const FIELD_OF_VIEW = degrees(FIELD_OF_VIEW_DEGREES);
 const COVERAGE = degrees(COVERAGE_DEGREES);
 
+// The ONE R's IMU axes sit a quarter turn about X from the lens calibration frame (IMU z along the
+// lens frame's y), measured on the owner's footage: of the 24 axis-aligned candidates it is the one
+// that keeps a world-locked view stillest through fast canopy turns (ADR 0010).
+const IMU_TO_CAMERA = fromRotationVector([-Math.PI / 2, 0, 0]);
+
 /**
  * Reads an Insta360 recording into the vendor-neutral {@link CameraRecording}.
  *
@@ -43,6 +49,7 @@ export function readInsta360Recording(reader: ByteReader): CameraRecording {
     lenses: readCalibration(info.calibration).lenses.map((pose) => toOptics(pose)),
     angularVelocity: imu.angularVelocity,
     acceleration: imu.acceleration,
+    imuToCamera: IMU_TO_CAMERA,
     exposures: readExposure(reader, regionById(records, EXPOSURE)),
     rollingShutter: seconds(info.rollingShutterMs / MS_PER_SECOND),
     captureClock: microseconds(info.firstFrameTimestamp),

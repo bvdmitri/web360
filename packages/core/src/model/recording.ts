@@ -1,3 +1,4 @@
+import type { Quaternion } from '../shared/math/quaternion';
 import type { Degrees, Microseconds, Seconds } from '../shared/units/units';
 
 /** A pixel width and height. */
@@ -71,7 +72,9 @@ export interface FrameExposure {
  * frame's timestamp, the origin the motion and exposure timestamps share.
  *
  * `angularVelocity` (rad/s) and `acceleration` (m/s^2) are separate streams on that clock, each at
- * its sensor's own rate.
+ * its sensor's own rate, in the IMU's axes. `imuToCamera` turns those axes into the frame the lens
+ * poses are stated in; without it the attitude integrated from the motion cannot steer the stitch.
+ * A video frame shown at time `t` into the video was captured at `captureClock + t`.
  */
 export interface CameraRecording {
   readonly model: string;
@@ -80,6 +83,7 @@ export interface CameraRecording {
   readonly lenses: readonly LensOptics[];
   readonly angularVelocity: readonly MotionSample[];
   readonly acceleration: readonly MotionSample[];
+  readonly imuToCamera: Quaternion;
   readonly exposures: readonly FrameExposure[];
   readonly rollingShutter: Seconds;
   readonly captureClock: Microseconds;
