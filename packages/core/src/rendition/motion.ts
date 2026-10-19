@@ -1,5 +1,6 @@
 import type { OrientationSample } from '../motion/orientation';
 import {
+  followCamera,
   levelHorizon,
   lockToWorld,
   smoothHeading,
@@ -9,10 +10,11 @@ import { identity, multiply } from '../shared/math/quaternion';
 import { seconds, type Seconds } from '../shared/units/units';
 
 /**
- * How a rendition holds its view: following the camera (`off`), fixed in the world (`lock`), level
- * with the heading following the camera (`horizon`), or level with the heading smoothed (`smooth`).
+ * How a rendition holds its view: as the camera moved (`off`), fixed in the world (`lock`), level
+ * with the heading following the camera (`horizon`), level with the heading smoothed (`smooth`), or
+ * following the camera with all of its motion smoothed (`follow`).
  */
-export type Stabilization = 'off' | 'lock' | 'horizon' | 'smooth';
+export type Stabilization = 'off' | 'lock' | 'horizon' | 'smooth' | 'follow';
 
 /** The view a rendition shows and how strongly `smooth` smooths it. */
 export interface ViewOptions {
@@ -28,7 +30,7 @@ const DEFAULT_SMOOTHING = seconds(1);
  * @remarks Each stabilization mode's correction (ADR 0006) is composed onto the attitude, so the
  * result is the `view` that `outputToCamera` takes. With stabilization `off` the view is the
  * attitude itself, so the output turns with the camera. `smoothing` is the heading's time constant
- * for `smooth`, one second unless given.
+ * for `smooth` and `follow`, one second unless given.
  */
 export function viewOf(
   attitude: readonly OrientationSample[],
@@ -47,7 +49,9 @@ function correctionsOf(
   options: ViewOptions,
 ): StabilizationSample[] {
   if (options.stabilization === 'lock') return lockToWorld(attitude);
-  return options.stabilization === 'horizon'
-    ? levelHorizon(attitude)
-    : smoothHeading(attitude, options.smoothing ?? DEFAULT_SMOOTHING);
+  if (options.stabilization === 'horizon') return levelHorizon(attitude);
+  const smoothing = options.smoothing ?? DEFAULT_SMOOTHING;
+  return options.stabilization === 'follow'
+    ? followCamera(attitude, smoothing)
+    : smoothHeading(attitude, smoothing);
 }

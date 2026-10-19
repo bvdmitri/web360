@@ -15,8 +15,8 @@ dedicated worker, usually), on WebCodecs and WebGPU.
 - **`packages/web360` is the published package** (`web360` on npm). Its entry is
   `openRendition(source, options)`: `source` is the recording's files as `Blob`s (`main`, the file
   with the trailer, and `second` for a split recording); `options` are the output `width` (the height
-  is half), `from` and `to` in seconds, `stabilization` (`off`, `lock`, `horizon`, `smooth`, by
-  default `smooth`), `smoothing`, `gainMatching` (default on) and an `AbortSignal`.
+  is half), `from` and `to` in seconds, `stabilization` (`off`, `lock`, `horizon`, `smooth`,
+  `follow`, by default `smooth`), `smoothing`, `gainMatching` (default on) and an `AbortSignal`.
 - **A `Rendition`** has `metadata` (the recording's `duration` in seconds and camera `model`), the
   span's `duration`, `frames()` (an async iterator of `VideoFrame`s timed in microseconds from the
   span's start, each closed by the caller) and `dispose()`. Opening reads only headers and checks

@@ -40,6 +40,12 @@ describe('the stabilized view', () => {
     );
   });
 
+  it('follows the camera, tilt and all, when following', () => {
+    const view = viewOf(attitude, { stabilization: 'follow', smoothing: seconds(0.001) });
+    expect(view[10]!.orientation.z).toBeCloseTo(attitude[10]!.orientation.z, 2);
+    expect(view[10]!.orientation.x).toBeCloseTo(attitude[10]!.orientation.x, 2);
+  });
+
   it('is empty without attitude', () => {
     expect(viewOf([], { stabilization: 'smooth' })).toEqual([]);
   });

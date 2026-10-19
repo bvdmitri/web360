@@ -31,6 +31,9 @@ the modes differ only in what of the camera's motion they keep.
   backward pass leads by the same amount. It needs the whole stream, which a recording has. The time
   constant is the mode's tuning surface, a larger one smoothing toward a locked heading and a
   vanishing one reducing to horizon leveling.
+- **Following the camera** (`followCamera`) runs the same two-way smoothing on the whole attitude
+  rather than the heading alone. The horizon is not levelled: the view leans and rolls with the
+  camera, without its shake, and a steady turn comes through without delay.
 
 ## Consequences
 

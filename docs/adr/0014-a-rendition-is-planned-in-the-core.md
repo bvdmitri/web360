@@ -17,8 +17,8 @@ tested to the core's standard and the browser layer thin.
   video the decode-order range to feed a decoder, from the last sync frame before the first frame
   it needs.
 - **`rendition/viewOf`** gives the stabilized view along the attitude: `off` follows the camera,
-  `lock`, `horizon` and `smooth` compose ADR 0006's corrections onto it (`smooth` with a one-second
-  heading time constant unless told otherwise).
+  `lock`, `horizon`, `smooth` and `follow` compose ADR 0006's corrections onto it (`smooth` and
+  `follow` with a one-second time constant unless told otherwise).
 - **`rendition/frameAt`** gives one frame's `StitchFrame`: the frame's moment on the motion clock
   is the capture clock plus its media time (ADR 0010), the output turns by `outputToCamera` at that
   moment, the rolling-shutter turn is tabulated down the canvas rows (ADR 0011), and the output is
@@ -34,4 +34,3 @@ tested to the core's standard and the browser layer thin.
   dropped frames pair with the nearest remaining one rather than drifting.
 - Colour is estimated on frames the rendition samples, not every frame; how often, and how the
   estimate is smoothed between samples, is the browser layer's choice and a quality knob.
-- `follow` (smoothing every axis rather than levelling) is not a mode yet.

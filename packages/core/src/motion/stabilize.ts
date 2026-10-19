@@ -75,13 +75,38 @@ export function smoothHeading(
   orientation: readonly OrientationSample[],
   timeConstant: Seconds,
 ): StabilizationSample[] {
+  return smoothTowards(orientation, {
+    timeConstant,
+    target: (sample) => headingAbout(sample, WORLD_UP),
+  });
+}
+
+/**
+ * Follows the camera with its whole orientation smoothed both ways in time, tilt included.
+ *
+ * @remarks The view is the camera's attitude run through the same two-way exponential smoothing as
+ * {@link smoothHeading}, on every axis rather than the heading alone: the horizon is not levelled,
+ * so the view leans and rolls as the camera does, without its shake. A steady turn comes through
+ * without delay. The time constant is the tuning surface, not a contract.
+ */
+export function followCamera(
+  orientation: readonly OrientationSample[],
+  timeConstant: Seconds,
+): StabilizationSample[] {
+  return smoothTowards(orientation, { timeConstant, target: (sample) => sample });
+}
+
+function smoothTowards(
+  orientation: readonly OrientationSample[],
+  smoothing: { readonly timeConstant: Seconds; readonly target: (q: Quaternion) => Quaternion },
+): StabilizationSample[] {
   const track = orientation.map((sample) => ({
     timestamp: sample.timestamp,
     orientation: sample.orientation,
-    heading: headingAbout(sample.orientation, WORLD_UP),
+    heading: smoothing.target(sample.orientation),
   }));
-  const forward = exponentialPass(track, timeConstant);
-  const both = exponentialPass(forward.toReversed(), timeConstant).toReversed();
+  const forward = exponentialPass(track, smoothing.timeConstant);
+  const both = exponentialPass(forward.toReversed(), smoothing.timeConstant).toReversed();
   return both.map((item) => ({
     timestamp: item.timestamp,
     correction: multiply(item.heading, conjugate(item.orientation)),

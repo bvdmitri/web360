@@ -11,7 +11,7 @@ import {
 } from '../shared/math/quaternion';
 import { microseconds, seconds } from '../shared/units/units';
 import type { OrientationSample } from './orientation';
-import { levelHorizon, lockToWorld, smoothHeading } from './stabilize';
+import { followCamera, levelHorizon, lockToWorld, smoothHeading } from './stabilize';
 
 const ONE_SECOND = 1_000_000;
 
@@ -186,6 +186,46 @@ describe('smooth heading', () => {
     expect(smoothHeading([], seconds(1)).length).toBe(0);
     const stream = [aboutZ(0, 0), aboutZ(ONE_SECOND, 0.5)];
     expect(smoothHeading(stream, seconds(1)).map((sample) => sample.timestamp)).toEqual([
+      0,
+      ONE_SECOND,
+    ]);
+  });
+});
+
+const aboutX = (micros: number, angle: number): OrientationSample =>
+  at(micros, fromRotationVector([angle, 0, 0]));
+
+describe('follow the camera', () => {
+  it('follows the camera exactly with a vanishing time constant', () => {
+    const stream = [aboutX(0, 0), aboutX(100_000, 0.4), aboutX(200_000, -0.2)];
+    const followed = followCamera(stream, seconds(1e-9));
+    for (const sample of followed) {
+      expectQuatClose(sample.correction, identity());
+    }
+  });
+
+  it('does not lag a steady roll, because it smooths both ways in time', () => {
+    const stream: OrientationSample[] = [];
+    for (let index = 0; index < 200; index += 1) stream.push(aboutX(index * 100_000, index * 0.03));
+    const followed = followCamera(stream, seconds(1));
+    const view = multiply(followed[100]!.correction, stream[100]!.orientation);
+    expect(2 * Math.atan2(view.x, view.w)).toBeCloseTo(3, 2);
+  });
+
+  it('keeps the tilt, unlike the levelling modes, and removes jitter about it', () => {
+    const stream: OrientationSample[] = [];
+    for (let index = 0; index < 200; index += 1) {
+      stream.push(aboutX(index * 100_000, 0.5 + (index % 2 === 0 ? 0.05 : -0.05)));
+    }
+    const followed = followCamera(stream, seconds(1));
+    const view = multiply(followed[100]!.correction, stream[100]!.orientation);
+    expect(2 * Math.atan2(view.x, view.w)).toBeCloseTo(0.5, 2);
+  });
+
+  it('keeps the camera clock and returns nothing for an empty stream', () => {
+    expect(followCamera([], seconds(1))).toEqual([]);
+    const stream = [aboutX(0, 0), aboutX(ONE_SECOND, 0.5)];
+    expect(followCamera(stream, seconds(1)).map((sample) => sample.timestamp)).toEqual([
       0,
       ONE_SECOND,
     ]);
