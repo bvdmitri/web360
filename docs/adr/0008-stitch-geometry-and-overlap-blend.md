@@ -34,9 +34,13 @@ the reference the GPU shader implements.
 - The feather is deliberately simple. Exposure is matched separately: `stitch/estimateGains` averages
   what each lens records over the overlap and scales each lens, per channel, onto the geometric mean,
   which removes the brightness and colour step between the lenses (on the ONE R the two disagree by
-  about a quarter, differently per channel). It is a single gain per lens, so it does not undo
-  vignetting, which darkens both lenses toward their edges and so toward the seam; a multiband blend
-  for doubled edges is also still to come. Both layer on the same lens selection, not changes to it.
+  about a quarter, differently per channel). Vignetting is corrected before that:
+  `stitch/estimateVignetting` fits a shared falloff `exp(-k * reach^2)` from how the two lenses'
+  brightness ratio varies across the overlap (one lens is nearer its rim than the other there), and
+  `stitch/devignette` flattens each lens by the inverse. The ONE R measures `k` near 0.5, a rim about
+  40 percent darker than the centre, which was the dark band left at the seam after gain matching.
+  The order matters: flatten first, then match exposure on the flattened lenses. A multiband blend
+  for edges doubled by parallax is still to come; all of these layer on the same lens selection.
 - The geometry is frame-consistent but not yet aligned to the camera's real forward or the image's
   pixel-row order; those conventions (ADR 0007's pose, this frame) are the first things a wrong-
   looking stitch will expose, and each is an isolated constant.

@@ -12,6 +12,7 @@ import { readTrailer } from '../format/insta360/trailer';
 import { ByteReader } from '../shared/binary/byteReader';
 import { identity } from '../shared/math/quaternion';
 import { estimateGains } from './gains';
+import { devignette, estimateVignetting } from './vignetting';
 import { renderEquirectangular, type LensSampler, type Rgb, type Scene } from './render';
 
 // A developer harness, not a CI test: point WEB360_PREVIEW_INSV at the `_00_` half of a real
@@ -152,16 +153,21 @@ describe('stitch preview (developer harness)', () => {
       const chosen = samplers.map((sampler, index) =>
         only === undefined || only === String(index) ? sampler : black,
       );
+      const strength =
+        process.env['WEB360_PREVIEW_VIGNETTE'] === '0'
+          ? 0
+          : estimateVignetting(recording.lenses, chosen, GAIN_GRID);
+      const flat = devignette(recording.lenses, chosen, strength);
       const tinted =
         process.env['WEB360_PREVIEW_TINT'] === undefined
-          ? chosen
-          : chosen.map((sampler, index) => tint(sampler, tints[index] ?? [1, 1, 1]));
+          ? flat
+          : flat.map((sampler, index) => tint(sampler, tints[index] ?? [1, 1, 1]));
 
       const gains =
         process.env['WEB360_PREVIEW_GAIN'] === '0'
           ? undefined
-          : estimateGains(recording.lenses, chosen, GAIN_GRID);
-      writeFileSync(`${outPng}.gains.json`, JSON.stringify(gains ?? null));
+          : estimateGains(recording.lenses, flat, GAIN_GRID);
+      writeFileSync(`${outPng}.correction.json`, JSON.stringify({ strength, gains }));
 
       const scene: Scene = {
         lenses: recording.lenses,
