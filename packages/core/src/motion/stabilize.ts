@@ -3,13 +3,15 @@ import {
   identity,
   multiply,
   normalize,
+  slerp,
   type Quaternion,
   type Vector3,
 } from '../shared/math/quaternion';
-import type { Microseconds } from '../shared/units/units';
+import type { Microseconds, Seconds } from '../shared/units/units';
 import type { OrientationSample } from './orientation';
 
 const WORLD_UP: Vector3 = [0, 0, 1];
+const MICROS_PER_SECOND = 1_000_000;
 
 /**
  * A stabilization correction at one instant.
@@ -53,6 +55,43 @@ export function levelHorizon(orientation: readonly OrientationSample[]): Stabili
     timestamp: sample.timestamp,
     correction: multiply(headingAbout(sample.orientation, WORLD_UP), conjugate(sample.orientation)),
   }));
+}
+
+/**
+ * Levels the horizon and lets the heading follow a low-pass of the camera's heading.
+ *
+ * @remarks Like {@link levelHorizon}, the stabilized view is a pure rotation about the vertical, so
+ * the horizon stays flat. Its heading does not follow the camera exactly but an exponential
+ * smoothing of it (a slerp toward each sample's heading, per-step weight `1 - exp(-dt /
+ * timeConstant)`), so a slow deliberate pan comes through while jitter does not. A larger
+ * `timeConstant` smooths harder, toward a locked heading; a very small one follows the heading
+ * exactly, as {@link levelHorizon} does. The time constant is the tuning surface, not a contract.
+ */
+export function smoothHeading(
+  orientation: readonly OrientationSample[],
+  timeConstant: Seconds,
+): StabilizationSample[] {
+  const out: StabilizationSample[] = [];
+  let smoothed = identity();
+  let previous: Microseconds | undefined;
+  for (const sample of orientation) {
+    const heading = headingAbout(sample.orientation, WORLD_UP);
+    smoothed =
+      previous === undefined
+        ? heading
+        : slerp(smoothed, heading, weight(previous, sample.timestamp, timeConstant));
+    out.push({
+      timestamp: sample.timestamp,
+      correction: multiply(smoothed, conjugate(sample.orientation)),
+    });
+    previous = sample.timestamp;
+  }
+  return out;
+}
+
+function weight(previous: Microseconds, now: Microseconds, timeConstant: Seconds): number {
+  const dt = (now - previous) / MICROS_PER_SECOND;
+  return 1 - Math.exp(-dt / timeConstant);
 }
 
 function headingAbout(q: Quaternion, axis: Vector3): Quaternion {

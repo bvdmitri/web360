@@ -66,9 +66,10 @@ a consumer needs presentation time rather than media-clock time.
   recording's angular-velocity stream into a unit-quaternion attitude per sample (ADR 0004), and
   `motion/fuseOrientation` fuses it with the acceleration stream into a drift-corrected attitude by
   a Mahony complementary filter (ADR 0005), both proven on the real ONE R tracks. On top of the
-  attitude, `motion/lockToWorld` and `motion/levelHorizon` are the first stabilization modes, each
-  a per-sample view correction (ADR 0006). Still to come: a smoothed-heading mode, and a slerp to
-  sample attitude or correction at a frame's time.
+  attitude, `motion/lockToWorld`, `motion/levelHorizon` and `motion/smoothHeading` are the
+  stabilization modes, each a per-sample view correction (ADR 0006), and `quaternion.slerp` is the
+  interpolation a renderer samples attitude or correction with at a frame's time. The motion layer
+  is complete to the model: a recording becomes drift-corrected attitude and a stabilized view.
 
 ### Later
 

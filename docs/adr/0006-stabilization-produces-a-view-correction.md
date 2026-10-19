@@ -23,6 +23,11 @@ the modes differ only in what of the camera's motion they keep.
   stabilized view is a pure rotation about the vertical. The horizon stays flat while a pan still
   pans. A camera pointed along the vertical has no heading there, and the split yields no heading
   rather than failing.
+- **Smoothed heading** keeps the horizon level the same way, but the view's heading follows an
+  exponential smoothing of the camera's heading rather than following it exactly: each sample
+  slerps the running heading toward the camera's by `1 - exp(-dt / timeConstant)`. A slow,
+  deliberate pan comes through; jitter does not. The time constant is the mode's tuning surface, a
+  larger one smoothing toward a locked heading and a vanishing one reducing to horizon leveling.
 
 ## Consequences
 

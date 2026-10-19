@@ -9,9 +9,9 @@ import {
   type Quaternion,
   type Vector3,
 } from '../shared/math/quaternion';
-import { microseconds } from '../shared/units/units';
+import { microseconds, seconds } from '../shared/units/units';
 import type { OrientationSample } from './orientation';
-import { levelHorizon, lockToWorld } from './stabilize';
+import { levelHorizon, lockToWorld, smoothHeading } from './stabilize';
 
 const ONE_SECOND = 1_000_000;
 
@@ -117,5 +117,54 @@ describe('level horizon', () => {
     expect(levelHorizon([]).length).toBe(0);
     const stream = [at(0, identity()), at(ONE_SECOND, fromRotationVector([0.1, 0, 0]))];
     expect(levelHorizon(stream).map((sample) => sample.timestamp)).toEqual([0, ONE_SECOND]);
+  });
+});
+
+const ramp = (count: number, perStep: number): OrientationSample[] => {
+  const out: OrientationSample[] = [];
+  for (let index = 0; index < count; index += 1) {
+    out.push(aboutZ(index * ONE_SECOND, index * perStep));
+  }
+  return out;
+};
+
+describe('smooth heading', () => {
+  it('follows the heading exactly with a vanishing time constant', () => {
+    const stream = [0, 0.3, 0.7, 1.1].map((angle, index) => aboutZ(index * ONE_SECOND, angle));
+    const smoothed = smoothHeading(stream, seconds(1e-9));
+    const level = levelHorizon(stream);
+    for (const [index, sample] of smoothed.entries()) {
+      expectQuatClose(sample.correction, level[index]!.correction);
+    }
+  });
+
+  it('holds the heading near its start with a large time constant', () => {
+    const smoothed = smoothHeading(ramp(10, 0.2), seconds(1e6));
+    const lastView = smoothed.at(-1)!.correction;
+    const camera = ramp(10, 0.2).at(-1)!.orientation;
+    expect(Math.abs(multiply(lastView, camera).z)).toBeLessThan(0.05);
+    expect(Math.abs(camera.z)).toBeGreaterThan(0.5);
+  });
+
+  it('keeps the horizon level while a camera with tilt pans', () => {
+    const tilt = fromRotationVector([0.3, 0, 0]);
+    const stream = [0, 0.3, 0.6].map((heading, index) =>
+      at(index * ONE_SECOND, multiply(fromRotationVector([0, 0, heading]), tilt)),
+    );
+    const smoothed = smoothHeading(stream, seconds(0.5));
+    for (const [index, sample] of smoothed.entries()) {
+      const view = multiply(sample.correction, stream[index]!.orientation);
+      expect(view.x).toBeCloseTo(0, 9);
+      expect(view.y).toBeCloseTo(0, 9);
+    }
+  });
+
+  it('keeps the camera clock and returns nothing for an empty stream', () => {
+    expect(smoothHeading([], seconds(1)).length).toBe(0);
+    const stream = [aboutZ(0, 0), aboutZ(ONE_SECOND, 0.5)];
+    expect(smoothHeading(stream, seconds(1)).map((sample) => sample.timestamp)).toEqual([
+      0,
+      ONE_SECOND,
+    ]);
   });
 });
