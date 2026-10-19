@@ -48,10 +48,12 @@ for the layering.
 
 ### Remaining readers
 
-- **GoPro reader** (`format/gopro`): the GPMF telemetry walker (`gpmf`) and the shared `format/mp4`
-  reading of the `.360` container are done, on a de-identified GoPro MAX fixture. What remains is
-  decoding the telemetry streams (gyro, accel, timing) and the EAC projection, then assembling them
-  into the same `CameraRecording` and generalising the optics for the cube map.
+- **GoPro reader** (`format/gopro`): the GPMF telemetry walker (`gpmf`), the per-stream decoder
+  (`stream`, scaling the signed-16-bit sensor streams to physical units with their labels and block
+  start time), and the shared `format/mp4` reading of the `.360` container are done, on a
+  de-identified GoPro MAX fixture. What remains is per-sample timing (spacing a block's samples by
+  the container's sample duration), the EAC projection, and assembling the streams into the same
+  `CameraRecording` while generalising the optics for the cube map.
 - **`open()`**: the public, vendor-agnostic entry point that reads a source into a
   `CameraRecording`, wiring the byte source and a split recording's two files through adapters.
 
@@ -79,14 +81,14 @@ shutter, capture clock), on top of the finished `format/mp4` container reader.
 The GoPro reader is underway. The `format/mp4` reader already reads the real GoPro MAX `.360`
 (six tracks, the dual EAC video at 5888x1920, and the `gpmd` telemetry track located by each
 track's sample format), on its own de-identified fixture. `format/gopro/gpmf` walks the GPMF
-telemetry (big-endian key-length-value: `DEVC` to `STRM` to the leaf streams), proven on the
-fixture's first sample (a populated gyroscope stream, a GPS stream scrubbed to zero). What remains
-for GoPro is assembling those streams and the EAC container into a `CameraRecording` and
-generalising the optics for the cube map.
+telemetry (big-endian key-length-value: `DEVC` to `STRM` to the leaf streams) and
+`format/gopro/stream` decodes a stream to physical units (dividing each component by its `SCAL`
+divisor), both proven on the fixture: the gyroscope decodes to 802 samples of rad/s and the
+accelerometer to 200 samples of m/s in the same one-second block.
 
-Assembling GoPro motion forces a model decision: GoPro records accelerometer and gyroscope as
-separate GPMF streams, possibly at different rates, where Insta360 gives one fused sample per tick.
-`CameraRecording.motion` is a single fused stream today; GoPro likely needs it split into
+That rate gap settles a model decision. GoPro records accelerometer and gyroscope as separate GPMF
+streams at different rates (802 Hz gyro against 200 Hz accel here), where Insta360 gives one fused
+sample per tick. `CameraRecording.motion` is a single fused stream today; GoPro needs it split into
 independently timed streams. That is the next major decision to settle before the GoPro recording
 assembler lands (it changes the model and ADR 0003).
 
