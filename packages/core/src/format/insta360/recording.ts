@@ -1,6 +1,6 @@
 import type { CameraRecording, LensOptics } from '../../model/recording';
 import type { ByteReader } from '../../shared/binary/byteReader';
-import { microseconds, seconds } from '../../shared/units/units';
+import { degrees, microseconds, seconds } from '../../shared/units/units';
 import type { Region } from '../mp4/box';
 import { readCalibration, type LensPose } from './calibration';
 import { readExposure } from './exposure';
@@ -12,6 +12,12 @@ const INFO = 1;
 const GYRO = 3;
 const EXPOSURE = 4;
 const MS_PER_SECOND = 1000;
+
+// The v1 calibration carries no field of view, so the reader supplies the lens's angular coverage
+// as a per-model constant (ADR 0007). This is the ONE R's provisional value, refined once the
+// stitch is seen on real footage.
+const FIELD_OF_VIEW_DEGREES = 193;
+const FIELD_OF_VIEW = degrees(FIELD_OF_VIEW_DEGREES);
 
 /**
  * Reads an Insta360 recording into the vendor-neutral {@link CameraRecording}.
@@ -49,6 +55,7 @@ function toOptics(pose: LensPose): LensOptics {
   return {
     projection: 'equidistant',
     radius: pose.radius,
+    fieldOfView: FIELD_OF_VIEW,
     center: pose.center,
     orientation: { yaw: pose.yaw, pitch: pose.pitch, roll: pose.roll },
   };

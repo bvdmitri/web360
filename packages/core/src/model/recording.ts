@@ -22,10 +22,19 @@ export interface Orientation {
  */
 export type LensProjection = 'equidistant';
 
-/** One lens's optics in the calibration canvas: its projection, fisheye radius, centre and pose. */
+/**
+ * One lens's optics in the calibration canvas: its projection, fisheye radius, field of view,
+ * centre and pose.
+ *
+ * @remarks `radius` is the fisheye image-circle radius in pixels, reached at the edge of
+ * `fieldOfView` (the lens's full angular coverage). The equidistant focal length is therefore
+ * `radius / (fieldOfView / 2)`. `fieldOfView` is physical knowledge about the lens the reader
+ * supplies, as the v1 calibration does not carry it (ADR 0007).
+ */
 export interface LensOptics {
   readonly projection: LensProjection;
   readonly radius: number;
+  readonly fieldOfView: Degrees;
   readonly center: readonly [number, number];
   readonly orientation: Orientation;
 }

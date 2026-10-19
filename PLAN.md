@@ -71,10 +71,18 @@ a consumer needs presentation time rather than media-clock time.
   interpolation a renderer samples attitude or correction with at a frame's time. The motion layer
   is complete to the model: a recording becomes drift-corrected attitude and a stabilized view.
 
+### Stitch (underway, toward replacing GyroView in cutaway)
+
+- `optics/lens` projects a camera-frame direction to a lens pixel and back for the Insta360
+  equidistant fisheye model (ADR 0007), from the calibration's radius, centre and pose plus a
+  per-model field of view the reader supplies (the v1 string carries none; the ONE R value is
+  provisional, refined on visual evaluation). Next: the stitch geometry (equirectangular direction
+  to stabilized ray to lens selection and overlap blend), then the WebGPU renderer, the WebCodecs
+  decode, the `openRendition` API, the published package, and the cutaway swap. See the session plan.
+
 ### Later
 
-- Optics (camera models, including the deferred GoPro EAC), stitching behind a GPU port, and
-  analysis (stabilization quality, motion, seams).
+- The deferred GoPro EAC optics, and analysis (stabilization quality, motion, seams).
 - Adapters (`packages/adapters/*`: byte sources, demuxing, decoding, WebGL) and the published
   package (`packages/web360`).
 
