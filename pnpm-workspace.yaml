@@ -2,3 +2,7 @@ packages:
   - packages/*
   - packages/adapters/*
   - tools/*
+
+# The Dawn bindings ship prebuilt; their install script only clears the macOS quarantine flag.
+allowBuilds:
+  webgpu: false

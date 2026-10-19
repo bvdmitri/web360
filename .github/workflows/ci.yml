@@ -27,5 +27,8 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: pnpm
+      # The WebGPU adapter's tests render on the GPU; the runner has none, so Mesa's software
+      # Vulkan driver stands in.
+      - run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends mesa-vulkan-drivers
       - run: pnpm install --frozen-lockfile
       - run: pnpm verify

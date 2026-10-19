@@ -6,13 +6,13 @@ implements a port the core defines. `.dependency-cruiser.cjs` enforces every rul
 
 ## Packages
 
-| Path                  | Role                                                                                                                                         |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/core`       | The vendor-neutral model of a recording and the pure functions over it. No runtime dependencies.                                             |
-| `packages/adapters/*` | One adapter per outside concern: byte sources (`fetch`, `blob`, `node`), demuxing, decoding, WebGL rendering. Each depends on the core only. |
-| `packages/web360`     | The published package: the public API, wiring the core to the adapters.                                                                      |
-| `tools/*`             | Development tools: repository checks, fixture builders, inspection and measurement.                                                          |
-| `examples/*`          | Unpublished examples built on the public API, such as a minimal player.                                                                      |
+| Path                  | Role                                                                                                                 |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `packages/core`       | The vendor-neutral model of a recording and the pure functions over it. No runtime dependencies.                     |
+| `packages/adapters/*` | One adapter per outside concern: byte sources, decoding, WebGPU rendering (`webgpu`). Each depends on the core only. |
+| `packages/web360`     | The published package: the public API, wiring the core to the adapters.                                              |
+| `tools/*`             | Development tools: repository checks, fixture builders, inspection and measurement.                                  |
+| `examples/*`          | Unpublished examples built on the public API, such as a minimal player.                                              |
 
 Packages are added when they first hold code.
 

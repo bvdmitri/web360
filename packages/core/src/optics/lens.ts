@@ -35,7 +35,7 @@ export interface Projected {
  * angle falls outside the lens's `coverage`, so the stitch does not sample beyond the usable image.
  */
 export function project(lens: LensOptics, direction: Vector3): Projected {
-  const [x, y, z] = rotate(conjugate(poseOf(lens.orientation)), direction);
+  const [x, y, z] = rotate(conjugate(lensPose(lens.orientation)), direction);
   const angle = Math.acos(Math.max(-1, Math.min(1, z)));
   const azimuth = Math.atan2(y, x);
   const r = focalLength(lens) * angle;
@@ -59,10 +59,17 @@ export function unproject(lens: LensOptics, pixel: readonly [number, number]): V
   const azimuth = Math.atan2(dy, dx);
   const sine = Math.sin(angle);
   const inLens: Vector3 = [sine * Math.cos(azimuth), sine * Math.sin(azimuth), Math.cos(angle)];
-  return rotate(poseOf(lens.orientation), inLens);
+  return rotate(lensPose(lens.orientation), inLens);
 }
 
-function poseOf(orientation: Orientation): Quaternion {
+/**
+ * The rotation that takes a lens-frame direction (optical axis `+z`) into the camera frame.
+ *
+ * @remarks It is the lens's yaw about `z`, then pitch about `x`, then roll about `y` (ADR 0007).
+ * {@link project} applies its inverse; a renderer that projects on its own (the GPU shader) is
+ * handed the same rotation so the two agree.
+ */
+export function lensPose(orientation: Orientation): Quaternion {
   const yaw = fromRotationVector([0, 0, degreesToRadians(orientation.yaw)]);
   const pitch = fromRotationVector([degreesToRadians(orientation.pitch), 0, 0]);
   const roll = fromRotationVector([0, degreesToRadians(orientation.roll), 0]);

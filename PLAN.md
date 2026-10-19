@@ -100,8 +100,10 @@ src/stitch/preview` (add `WEB360_PREVIEW_TINT=1` or `WEB360_PREVIEW_ONLY=0|1` to
 - `stitch/rollingShutter` corrects each row for the turn made during the 22 ms readout, and the
   stitch takes it as a `Shutter` (ADR 0011). The order was chosen by modest evidence.
 - Visible, not yet addressed: a thin seam line, near-field parallax (helmet, canopy), and a
-  calibration refinement that needs a rig mask and several frames. Next: the WebGPU renderer (M3),
-  WebCodecs decode (M4), `openRendition` and the published package (M5-M6), and the cutaway swap
+  calibration refinement that needs a rig mask and several frames.
+- `packages/adapters/webgpu` renders the stitch as a WGSL pass over the numbers
+  `stitch/packStitch` lays out, tested pixel for pixel against the reference on a GPU (ADR 0012).
+  Next: WebCodecs decode (M4), `openRendition` and the published package (M5-M6), and the cutaway swap
   (M7), with seam polish iterated from evaluation in cutaway. See the session plan.
 
 ### Later

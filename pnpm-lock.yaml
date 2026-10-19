@@ -48,6 +48,25 @@ importers:
         specifier: 4.1.11
         version: 4.1.11(@types/node@26.6.1)(@vitest/coverage-istanbul@4.1.11)(vite@8.3.4(@types/node@26.6.1)(yaml@2.9.1))
 
+  packages/adapters/webgpu:
+    dependencies:
+      '@web360/core':
+        specifier: workspace:*
+        version: link:../../core
+    devDependencies:
+      '@types/node':
+        specifier: 26.6.1
+        version: 26.6.1
+      '@webgpu/types':
+        specifier: 0.1.74
+        version: 0.1.74
+      vitest:
+        specifier: 4.1.11
+        version: 4.1.11(@types/node@26.6.1)(@vitest/coverage-istanbul@4.1.11)(vite@8.3.4(@types/node@26.6.1)(yaml@2.9.1))
+      webgpu:
+        specifier: 0.6.1
+        version: 0.6.1(supports-color@7.2.0)
+
   packages/core:
     devDependencies:
       '@stryker-mutator/core':
@@ -806,6 +825,9 @@ packages:
 
   '@vitest/utils@4.1.11':
     resolution: {integrity: sha512-zTCVGpyFsGWBhllOyKlTw/vnr6D9qxsfSDyfbyZmTyjHw5N/VuvzHpHoQjm2ZJzn4RJgx5w4r7V0er69CmLgPQ==}
+
+  '@webgpu/types@0.1.74':
+    resolution: {integrity: sha512-lgiI4hbuLcI9unnm2cL/tvCaQU45dp0xcLWJh5uB/9MBGvIA4F8XIk7nSiBeg+K4xWGYwgZKn80LmERI5CxoTA==}
 
   acorn-jsx-walk@2.0.0:
     resolution: {integrity: sha512-uuo6iJj4D4ygkdzd6jPtcxs8vZgDX9YFIkqczGImoypX2fQ4dVImmu3UzA4ynixCIMTrEOWW+95M2HuBaCEOVA==}
@@ -1919,6 +1941,9 @@ packages:
   weapon-regex@2.0.6:
     resolution: {integrity: sha512-iJC2vqYp+bh3r4X6zjuP0h65XqXjgUX3nJgmhj0PQMrdhAbUwCfN76CSTEEQqV3G7468kjOJ69PmytTG8l/8Gg==}
 
+  webgpu@0.6.1:
+    resolution: {integrity: sha512-T+B65/j2jhyFjbWHsVZ4TJw0nk0RVT27lG+nL3V5IIYMsvuVYKYOUli/yJhMpwvXAwqVPZehakWvTjxk+mK8LQ==}
+
   which@2.0.2:
     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
     engines: {node: '>= 8'}
@@ -2783,6 +2808,8 @@ snapshots:
       '@vitest/pretty-format': 4.1.11
       convert-source-map: 2.0.0
       tinyrainbow: 3.2.0
+
+  '@webgpu/types@0.1.74': {}
 
   acorn-jsx-walk@2.0.0: {}
 
@@ -3755,6 +3782,13 @@ snapshots:
   watskeburt@6.0.0: {}
 
   weapon-regex@2.0.6: {}
+
+  webgpu@0.6.1(supports-color@7.2.0):
+    dependencies:
+      '@webgpu/types': 0.1.74
+      debug: 4.4.3(supports-color@7.2.0)
+    transitivePeerDependencies:
+      - supports-color
 
   which@2.0.2:
     dependencies:
