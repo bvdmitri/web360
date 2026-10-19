@@ -2,16 +2,8 @@ import type { EncodedVideo, LensPicture } from '@web360/core';
 import { browserCodecs, type Codecs } from '@web360/webcodecs';
 
 import { Web360Error } from './errors';
-
-/** Where stitched frames are drawn and how each becomes a frame for the caller. */
-export interface Presenter {
-  readonly format: GPUTextureFormat;
-  /** The texture the next frame is rendered into. */
-  target(): GPUTexture;
-  /** The frame just rendered, at the given time, as the caller receives it. */
-  capture(timing: { readonly timestamp: number; readonly duration: number }): Promise<VideoFrame>;
-  destroy(): void;
-}
+import { externalFrameCopier, type FrameCopier } from './copier';
+import { readbackPresenter, type Presenter } from './presenter';
 
 /**
  * What a rendition needs from its environment: decoders, a GPU device, a surface to present on,
@@ -40,12 +32,9 @@ export function browserPlatform(): Platform {
     codecs: browserCodecs(),
     ensureDecodable,
     device: requestDevice,
-    presenter: canvasPresenter,
+    presenter: (device, size) => readbackPresenter(device, size),
     upload: (device, frame, texture): void => {
-      device.queue.copyExternalImageToTexture({ source: frame }, { texture }, [
-        Math.min(frame.displayWidth, texture.width),
-        Math.min(frame.displayHeight, texture.height),
-      ]);
+      copierFor(device)(frame, texture);
     },
     picture: (frame, size): LensPicture => {
       const canvas = new OffscreenCanvas(size, size);
@@ -72,6 +61,17 @@ async function ensureDecodable(video: EncodedVideo): Promise<void> {
   }
 }
 
+// Each device's frame copier, made on its first frame.
+const copiers = new WeakMap<GPUDevice, FrameCopier>();
+
+function copierFor(device: GPUDevice): FrameCopier {
+  const known = copiers.get(device);
+  if (known !== undefined) return known;
+  const made = externalFrameCopier(device);
+  copiers.set(device, made);
+  return made;
+}
+
 async function requestDevice(): Promise<GPUDevice> {
   const gpu = typeof navigator === 'object' && 'gpu' in navigator ? navigator.gpu : undefined;
   const adapter = await gpu?.requestAdapter();
@@ -79,23 +79,4 @@ async function requestDevice(): Promise<GPUDevice> {
     throw new Web360Error('render-unavailable', 'this browser has no WebGPU adapter');
   }
   return adapter.requestDevice();
-}
-
-function canvasPresenter(
-  device: GPUDevice,
-  size: { readonly width: number; readonly height: number },
-): Presenter {
-  const canvas = new OffscreenCanvas(size.width, size.height);
-  const context = canvas.getContext('webgpu');
-  if (context === null) throw new Web360Error('render-unavailable', 'no WebGPU canvas');
-  const format = navigator.gpu.getPreferredCanvasFormat();
-  context.configure({ device, format, alphaMode: 'opaque' });
-  return {
-    format,
-    target: () => context.getCurrentTexture(),
-    capture: (timing) => Promise.resolve(new VideoFrame(canvas, timing)),
-    destroy: (): void => {
-      context.unconfigure();
-    },
-  };
 }

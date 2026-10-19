@@ -24,8 +24,11 @@ dedicated worker, usually), on WebCodecs and WebGPU.
 - **Failures are a `Web360Error` with a `code`**: `missing-second-file`, `unreadable-recording`,
   `render-unavailable` (no WebGPU), `webcodecs-unavailable`, `codec-unsupported`, `decode`. An
   application maps the codes to what it tells its user.
-- **The browser is a `Platform`**: WebCodecs decoders and chunks, a WebGPU device, an
-  `OffscreenCanvas` presenter, the copy of a decoded frame to a texture and to a small picture.
+- **The browser is a `Platform`**: WebCodecs decoders and chunks, a WebGPU device, a presenter, and
+  two ways to move a decoded frame: onto a texture (imported as an external texture and drawn, the
+  path browsers make cheap for video) and into a small picture for colour. The presenter renders
+  into a texture of its own and reads each frame back as RGBA rows for a `VideoFrame`: a worker's
+  WebGPU canvas is never presented, and frames taken from one read blank in headless Chromium.
   `browserPlatform()` is the default; a test passes its own, so the whole loop (decode pairing,
   colour matching, stitching on a real GPU through Dawn, cleanup on error, abort and early return)
   is tested outside a browser with fake decoders.
@@ -39,4 +42,8 @@ dedicated worker, usually), on WebCodecs and WebGPU.
 - The browser path itself (real `VideoDecoder`, `copyExternalImageToTexture`, the canvas capture) is
   exercised only in a browser; the first consumer's end-to-end tests and its real uploads are where
   it is proven.
-- The output frames are the canvas's preferred format (often BGRA); encoders take either order.
+- Output frames are RGBA. Reading them back costs a copy from the GPU per frame; on the ONE R at
+  3840 by 1920 a Mac renders about 20 frames a second this way, ahead of a 30 fps encoder only
+  with headroom to spare. Presenting without the copy is a later optimisation.
+- Headless Chromium's shell cannot import hardware-decoded frames; real browsers can, and software
+  decoding (the SwiftShader setup end-to-end tests use) imports fine.

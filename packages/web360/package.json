@@ -1,9 +1,18 @@
 {
   "name": "web360",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "description": "Stitch and stabilize 360 recordings in the browser, on WebGPU and WebCodecs.",
   "license": "MIT",
+  "author": "bvdmitri",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bvdmitri/web360.git",
+    "directory": "packages/web360"
+  },
+  "homepage": "https://github.com/bvdmitri/web360#readme",
+  "bugs": {
+    "url": "https://github.com/bvdmitri/web360/issues"
+  },
   "type": "module",
   "sideEffects": false,
   "exports": {

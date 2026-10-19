@@ -8,8 +8,10 @@ import { create, globals } from 'webgpu';
 import { describe, expect, it } from 'vitest';
 
 import { Web360Error } from './errors';
-import type { Platform, Presenter } from './platform';
+import type { Platform } from './platform';
+import type { Presenter } from './presenter';
 import type { RenditionOptions } from './options';
+import { readbackPresenter } from './presenter';
 import { openRendition } from './rendition';
 
 Object.assign(globalThis, globals);
@@ -111,41 +113,19 @@ const fakeCodecs = (
   };
 };
 
-const presenterOn = (device: GPUDevice, size: { width: number; height: number }): Presenter => {
-  const texture = device.createTexture({
-    size: [size.width, size.height],
-    format: 'rgba8unorm',
-    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+// The real presenter, with frames made as plain objects holding the read-back pixels.
+const presenterOn = (device: GPUDevice, size: { width: number; height: number }): Presenter =>
+  readbackPresenter(device, size, (pixels, init) => {
+    const presented: Presented = {
+      timestamp: init.timestamp,
+      duration: init.duration ?? 0,
+      pixels,
+      close: (): void => {
+        // Plain bytes: nothing to release.
+      },
+    };
+    return presented as unknown as VideoFrame;
   });
-  const bytesPerRow = Math.ceil((size.width * 4) / 256) * 256;
-  return {
-    format: 'rgba8unorm',
-    target: () => texture,
-    capture: async (timing): Promise<VideoFrame> => {
-      const buffer = device.createBuffer({
-        size: bytesPerRow * size.height,
-        usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-      });
-      const encoder = device.createCommandEncoder();
-      encoder.copyTextureToBuffer({ texture }, { buffer, bytesPerRow }, [size.width, size.height]);
-      device.queue.submit([encoder.finish()]);
-      await buffer.mapAsync(GPUMapMode.READ);
-      const pixels = Uint8Array.from(new Uint8Array(buffer.getMappedRange()));
-      buffer.destroy();
-      const presented: Presented = {
-        ...timing,
-        pixels,
-        close: (): void => {
-          // Read back already: nothing to release.
-        },
-      };
-      return presented as unknown as VideoFrame;
-    },
-    destroy: (): void => {
-      texture.destroy();
-    },
-  };
-};
 
 const fakePlatform = (
   options: { readonly failAfter?: number; readonly decodable?: boolean } = {},

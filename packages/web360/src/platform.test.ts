@@ -53,13 +53,38 @@ describe('the browser platform', () => {
     await expect(browserPlatform().device()).resolves.toBe(device);
   });
 
-  it('copies a frame onto its texture, no larger than either', () => {
-    const copy = vi.fn();
-    const device = { queue: { copyExternalImageToTexture: copy } } as unknown as GPUDevice;
-    const texture = { width: 2880, height: 2880 } as GPUTexture;
-    const frame = { displayWidth: 3000, displayHeight: 2000 } as VideoFrame;
-    browserPlatform().upload(device, frame, texture);
-    expect(copy).toHaveBeenCalledWith({ source: frame }, { texture }, [2880, 2000]);
+  it('draws each frame onto its texture from an imported external texture', () => {
+    const imported = vi.fn((descriptor: GPUExternalTextureDescriptor) => descriptor);
+    const pipelines = vi.fn(() => ({ getBindGroupLayout: (): unknown => ({}) }));
+    const draw = vi.fn();
+    const submit = vi.fn();
+    const pass = {
+      setPipeline: vi.fn(),
+      setBindGroup: vi.fn(),
+      draw,
+      end: vi.fn(),
+    };
+    const device = {
+      createShaderModule: (): unknown => ({}),
+      createSampler: (): unknown => ({}),
+      createRenderPipeline: pipelines,
+      createBindGroup: (descriptor: GPUBindGroupDescriptor): unknown => descriptor,
+      importExternalTexture: imported,
+      createCommandEncoder: (): unknown => ({ beginRenderPass: () => pass, finish: () => ({}) }),
+      queue: { submit },
+    } as unknown as GPUDevice;
+    const texture = {
+      format: 'rgba8unorm',
+      createView: (): unknown => ({}),
+    } as unknown as GPUTexture;
+    const frame = {} as VideoFrame;
+    const platform = browserPlatform();
+    platform.upload(device, frame, texture);
+    platform.upload(device, frame, texture);
+    expect(imported).toHaveBeenCalledWith({ source: frame });
+    expect(pipelines).toHaveBeenCalledTimes(1);
+    expect(draw).toHaveBeenCalledWith(3);
+    expect(submit).toHaveBeenCalledTimes(2);
   });
 
   it('draws a frame small into a picture', () => {
@@ -84,40 +109,5 @@ describe('the browser platform', () => {
     }
     vi.stubGlobal('OffscreenCanvas', Canvas);
     expect(() => browserPlatform().picture({} as VideoFrame, 4)).toThrow(/canvas/);
-    expect(() => browserPlatform().presenter({} as GPUDevice, { width: 8, height: 4 })).toThrow(
-      /canvas/,
-    );
-  });
-
-  it('presents on a WebGPU canvas and captures it as a video frame', async () => {
-    const configure = vi.fn();
-    const unconfigure = vi.fn();
-    const texture = { label: 'current' };
-    class Canvas {
-      public getContext(): unknown {
-        return { configure, unconfigure, getCurrentTexture: () => texture };
-      }
-    }
-    class Frame {
-      public readonly source: unknown;
-      public readonly init: unknown;
-
-      public constructor(source: unknown, init: unknown) {
-        this.source = source;
-        this.init = init;
-      }
-    }
-    vi.stubGlobal('OffscreenCanvas', Canvas);
-    vi.stubGlobal('VideoFrame', Frame);
-    vi.stubGlobal('navigator', { gpu: { getPreferredCanvasFormat: () => 'bgra8unorm' } });
-    const device = {} as GPUDevice;
-    const presenter = browserPlatform().presenter(device, { width: 8, height: 4 });
-    expect(presenter.format).toBe('bgra8unorm');
-    expect(configure).toHaveBeenCalledWith({ device, format: 'bgra8unorm', alphaMode: 'opaque' });
-    expect(presenter.target()).toBe(texture);
-    const captured = (await presenter.capture({ timestamp: 5, duration: 2 })) as unknown as Frame;
-    expect(captured.init).toEqual({ timestamp: 5, duration: 2 });
-    presenter.destroy();
-    expect(unconfigure).toHaveBeenCalled();
   });
 });

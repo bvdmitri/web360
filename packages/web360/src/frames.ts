@@ -13,7 +13,7 @@ import { createStitcher, type Stitcher } from '@web360/webgpu';
 
 import { blendColour } from './colour';
 import { Web360Error } from './errors';
-import type { Presenter } from './platform';
+import type { Presenter } from './presenter';
 import type { OpenedRendition } from './options';
 
 const MICROS_PER_SECOND = 1_000_000;
