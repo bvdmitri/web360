@@ -24,6 +24,7 @@ Test fixtures live in `test/fixtures/`, stored with Git LFS (`.gitattributes`). 
 built synthetically by `tools/fixtures`, or derived from a real recording so that it keeps no
 faces or identifying details. A derived fixture is one of two kinds: a short clip cut losslessly,
 or a structural extract that keeps a recording's container and metadata but drops the picture
-entirely (so it has no frames and no faces), with the embedded thumbnails zeroed and the camera
-serial replaced. Every fixture has an entry in `test/fixtures/manifest.json` naming its origin, its
+entirely (so it has no frames and no faces), with any identifying content removed: an embedded
+thumbnail zeroed, a camera serial replaced, a GPS track zeroed. Every fixture has an entry in
+`test/fixtures/manifest.json` naming its origin, its
 licence and what it covers.
