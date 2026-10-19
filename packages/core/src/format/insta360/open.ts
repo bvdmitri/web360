@@ -35,33 +35,58 @@ export class MissingLensFileError extends Error {
  * Opens an Insta360 recording from its files, reading the trailer and each file's movie but no
  * media.
  *
- * @remarks The primary file carries the trailer (the `_00_` half of a split recording). A split
- * recording stores each lens in its own file, a video with the aspect of the lens's share of the
- * canvas (its frames cover that share, scaled); it needs `secondary`, and throws {@link MissingLensFileError} without it. Otherwise one video covers
- * the whole canvas for both lenses. Throws `NotInsta360Error` for a file with no Insta360 trailer.
+ * @remarks The primary file carries the trailer (the `_00_` half of a split recording). A video
+ * with the aspect of one lens's share of the canvas holds one lens, its frames covering that share
+ * scaled. A camera that writes one such track per lens in the primary file (the X5) reads each lens
+ * from its own track; one that splits its lenses across two files (the ONE R) needs `secondary`
+ * for the second lens and throws {@link MissingLensFileError} without it. Otherwise one video
+ * covers the whole canvas for every lens. Throws `NotInsta360Error` for a file with no Insta360
+ * trailer.
  */
 export async function openInsta360(files: Insta360Files): Promise<Insta360Opened> {
   const tail = await readTail(files.primary);
   const recording = readInsta360Recording(tail);
   const canvas = canvasOf(tail);
-  const primary = await videoOf(files.primary);
-  const isSplitRecording = isSplit(primary, { canvas, lenses: recording.lenses.length });
-  const secondary = isSplitRecording ? files.secondary : undefined;
-  if (isSplitRecording && secondary === undefined) {
-    throw new MissingLensFileError('this recording splits its lenses across two files');
-  }
-  const sources = secondary === undefined ? [files.primary] : [files.primary, secondary];
-  const videos = secondary === undefined ? [primary] : [primary, await videoOf(secondary)];
+  const tracks = await videosOf(files.primary);
+  const [primary] = tracks;
+  if (primary === undefined) throw new UnsupportedContainerError('the file has no video track');
+  const lenses = recording.lenses.length;
+  const isPerLens = isSplit(primary, { canvas, lenses });
+  const layout = isPerLens ? await perLens({ files, tracks, lenses }) : whole(files, primary);
   return {
     recording,
     canvas,
-    videos,
-    sources,
-    images: recording.lenses.map((...[, index]) =>
-      imageOf({ canvas, isSplit: isSplitRecording, index }),
-    ),
+    ...layout,
+    images: recording.lenses.map((...[, index]) => imageOf({ canvas, isSplit: isPerLens, index })),
     duration: durationOf(primary),
   };
+}
+
+interface Layout {
+  readonly videos: readonly EncodedVideo[];
+  readonly sources: readonly RandomAccessSource[];
+}
+
+function whole(files: Insta360Files, video: EncodedVideo): Layout {
+  return { videos: [video], sources: [files.primary] };
+}
+
+async function perLens(found: {
+  readonly files: Insta360Files;
+  readonly tracks: readonly EncodedVideo[];
+  readonly lenses: number;
+}): Promise<Layout> {
+  const { files, tracks, lenses } = found;
+  if (tracks.length >= lenses) {
+    const videos = tracks.slice(0, lenses);
+    return { videos, sources: videos.map(() => files.primary) };
+  }
+  if (files.secondary === undefined) {
+    throw new MissingLensFileError('this recording splits its lenses across two files');
+  }
+  const [second] = await videosOf(files.secondary);
+  if (second === undefined) throw new UnsupportedContainerError('the file has no video track');
+  return { videos: [...tracks, second], sources: [files.primary, files.secondary] };
 }
 
 // A split recording's video holds one lens: the canvas's aspect over the lens count.
@@ -86,14 +111,13 @@ function canvasOf(tail: ByteReader): readonly [number, number] {
   return readCalibration(readInfo(tail, info.region).calibration).canvas;
 }
 
-async function videoOf(source: RandomAccessSource): Promise<EncodedVideo> {
+async function videosOf(source: RandomAccessSource): Promise<EncodedVideo[]> {
   const movie = await readMovieFrom(source);
-  const track = movie.tracks.find((candidate) => candidate.handler === VIDEO_HANDLER);
-  const entry = track?.sampleEntry;
-  if (track === undefined || entry === undefined) {
-    throw new UnsupportedContainerError('the file has no video track');
-  }
-  return { ...entry, frames: framesOf(track) };
+  return movie.tracks.flatMap((track) =>
+    track.handler === VIDEO_HANDLER && track.sampleEntry !== undefined
+      ? [{ ...track.sampleEntry, frames: framesOf(track) }]
+      : [],
+  );
 }
 
 function framesOf(track: Track): EncodedFrame[] {
