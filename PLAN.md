@@ -68,10 +68,11 @@ In order:
 
 ## Current state and next step
 
-The container reader (`format/mp4`) walks the box tree and reads the sample-table boxes (`stts`,
-`ctts`, `stss`, `stsz`, `stsc`, `stco` and `co64`). The next task finishes the container: the
-movie header, the track structure (id, media and movie timescales, handler, the sample entry and
-its codec) and the edit list, then timing to the sample, refusing fragmented files.
+The container reader (`format/mp4`) walks the box tree and reads the pieces of a track: the movie
+and media timescales, the track id, the handler, the visual sample entry (codec, coded size, NAL
+length size), and the sample-table boxes (`stts`, `ctts`, `stss`, `stsz`, `stsc`, `stco` and
+`co64`). The next task assembles these into a movie of tracks, each with its edit list and its
+samples timed to the media clock, and refuses a fragmented file.
 
 To resume: `pnpm install`, then `pnpm verify` should be green. Read [CLAUDE.md](./CLAUDE.md), then
 the document in [docs/](./docs) for the area about to change.

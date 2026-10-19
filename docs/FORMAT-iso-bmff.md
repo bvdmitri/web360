@@ -36,6 +36,24 @@ The reader walks a half-open byte range and keeps every offset absolute within t
 stay absolute because a chunk offset read from a sample table later states its position against
 the start of the file, not against the box it sits in, so no translation is needed.
 
+## Movie and tracks
+
+The `moov` box holds the movie: one `mvhd` and one `trak` per track.
+
+- `mvhd`, the movie header, carries the movie timescale, the ticks per second an edit list counts
+  in. It is a full box whose version sets the width of its creation and modification times
+  (32-bit at version 0, 64-bit at version 1); a `u32` timescale follows the two times.
+- `trak/tkhd`, the track header, carries the track id, a `u32` in that same spot past the two
+  times.
+- `trak/mdia/mdhd`, the media header, carries the media timescale in the same spot; a track's
+  sample times count in it.
+- `trak/mdia/hdlr`, the handler, is a four-byte code for what the track holds: `vide` for video,
+  `soun` for sound. A track of any other handler (a camera's own metadata track) is left out.
+- `trak/mdia/minf/stbl/stsd`, the sample description, holds the sample entry. A visual entry names
+  its codec (a four-byte code such as `hvc1` or `avc1`), its coded width and height, and, in a
+  child `hvcC` or `avcC` box, the bytes that prefix each stored NAL unit (that box's length field,
+  its low two bits plus one).
+
 ## Sample tables
 
 A track's sample table (`stbl`, inside `trak/mdia/minf`) says where each sample sits and how long
