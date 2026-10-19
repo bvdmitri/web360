@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  conjugate,
   fromRotationVector,
   identity,
   multiply,
@@ -10,13 +11,17 @@ import {
 } from '../shared/math/quaternion';
 import { microseconds } from '../shared/units/units';
 import type { OrientationSample } from './orientation';
-import { lockToWorld } from './stabilize';
+import { levelHorizon, lockToWorld } from './stabilize';
 
 const ONE_SECOND = 1_000_000;
 
 const aboutZ = (micros: number, angle: number): OrientationSample => ({
   timestamp: microseconds(micros),
   orientation: fromRotationVector([0, 0, angle]),
+});
+const at = (micros: number, orientation: Quaternion): OrientationSample => ({
+  timestamp: microseconds(micros),
+  orientation,
 });
 const expectQuatClose = (a: Quaternion, b: Quaternion): void => {
   expect(a.w).toBeCloseTo(b.w, 9);
@@ -65,5 +70,52 @@ describe('lock to world', () => {
     const [first] = lockToWorld([aboutZ(0, Math.PI / 5)]);
     if (first === undefined) throw new Error('expected a sample');
     expectQuatClose(first.correction, identity());
+  });
+});
+
+describe('level horizon', () => {
+  it('leaves an already-level heading untouched', () => {
+    const attitude = fromRotationVector([0, 0, Math.PI / 3]);
+    const [sample] = levelHorizon([at(0, attitude)]);
+    if (sample === undefined) throw new Error('expected a sample');
+    expectQuatClose(sample.correction, identity());
+    expectQuatClose(multiply(sample.correction, attitude), attitude);
+  });
+
+  it('removes a pure tilt, leaving a level view', () => {
+    const attitude = fromRotationVector([Math.PI / 4, 0, 0]);
+    const [sample] = levelHorizon([at(0, attitude)]);
+    if (sample === undefined) throw new Error('expected a sample');
+    expectQuatClose(multiply(sample.correction, attitude), identity());
+  });
+
+  it('splits any attitude into a vertical heading and a tilt that carries no heading', () => {
+    const attitude = fromRotationVector([0.3, -0.2, 0.5]);
+    const [sample] = levelHorizon([at(0, attitude)]);
+    if (sample === undefined) throw new Error('expected a sample');
+
+    const view = multiply(sample.correction, attitude);
+    const tilt = multiply(attitude, conjugate(view));
+    expect(view.x).toBeCloseTo(0, 9);
+    expect(view.y).toBeCloseTo(0, 9);
+    expect(tilt.z).toBeCloseTo(0, 9);
+    expectQuatClose(multiply(tilt, view), attitude);
+  });
+
+  it('keeps a vertical view level while the camera tilts under it', () => {
+    const attitude = multiply(
+      fromRotationVector([0, 0, Math.PI / 6]),
+      fromRotationVector([0.4, 0, 0]),
+    );
+    const [sample] = levelHorizon([at(0, attitude)]);
+    if (sample === undefined) throw new Error('expected a sample');
+    const up = rotate(multiply(sample.correction, attitude), [0, 0, 1]);
+    expectVecClose(up, [0, 0, 1]);
+  });
+
+  it('keeps the camera clock and returns nothing for an empty stream', () => {
+    expect(levelHorizon([]).length).toBe(0);
+    const stream = [at(0, identity()), at(ONE_SECOND, fromRotationVector([0.1, 0, 0]))];
+    expect(levelHorizon(stream).map((sample) => sample.timestamp)).toEqual([0, ONE_SECOND]);
   });
 });

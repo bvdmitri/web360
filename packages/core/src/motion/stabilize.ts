@@ -1,6 +1,15 @@
-import { conjugate, identity, multiply, type Quaternion } from '../shared/math/quaternion';
+import {
+  conjugate,
+  identity,
+  multiply,
+  normalize,
+  type Quaternion,
+  type Vector3,
+} from '../shared/math/quaternion';
 import type { Microseconds } from '../shared/units/units';
 import type { OrientationSample } from './orientation';
+
+const WORLD_UP: Vector3 = [0, 0, 1];
 
 /**
  * A stabilization correction at one instant.
@@ -28,4 +37,30 @@ export function lockToWorld(orientation: readonly OrientationSample[]): Stabiliz
     timestamp: sample.timestamp,
     correction: multiply(reference, conjugate(sample.orientation)),
   }));
+}
+
+/**
+ * Levels the horizon while letting the heading follow the camera.
+ *
+ * @remarks The attitude is split about the world vertical into a heading (the rotation about the
+ * vertical) and a tilt (the rest), and the correction removes the tilt and keeps the heading. The
+ * stabilized view is then a pure rotation about the vertical, so the horizon stays flat while a
+ * pan still pans. A camera pointed straight up or down has no defined heading there; the split
+ * falls back to no heading rather than failing.
+ */
+export function levelHorizon(orientation: readonly OrientationSample[]): StabilizationSample[] {
+  return orientation.map((sample) => ({
+    timestamp: sample.timestamp,
+    correction: multiply(headingAbout(sample.orientation, WORLD_UP), conjugate(sample.orientation)),
+  }));
+}
+
+function headingAbout(q: Quaternion, axis: Vector3): Quaternion {
+  const projection = q.x * axis[0] + q.y * axis[1] + q.z * axis[2];
+  return normalize({
+    w: q.w,
+    x: axis[0] * projection,
+    y: axis[1] * projection,
+    z: axis[2] * projection,
+  });
 }

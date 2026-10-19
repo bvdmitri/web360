@@ -62,11 +62,13 @@ a consumer needs presentation time rather than media-clock time.
 
 ### Motion (underway)
 
-- `shared/math/quaternion` is the rotation primitive, and `motion/integrateOrientation` turns a
-  recording's angular-velocity stream into a unit-quaternion attitude per sample (ADR 0004),
-  proven on the real ONE R gyro track. Still to come: the stabilization modes (lock-to-world,
-  horizon leveling from the acceleration stream, smoothed heading), and a slerp to sample attitude
-  at a frame's time.
+- `shared/math/quaternion` is the rotation primitive. `motion/integrateOrientation` turns a
+  recording's angular-velocity stream into a unit-quaternion attitude per sample (ADR 0004), and
+  `motion/fuseOrientation` fuses it with the acceleration stream into a drift-corrected attitude by
+  a Mahony complementary filter (ADR 0005), both proven on the real ONE R tracks. On top of the
+  attitude, `motion/lockToWorld` and `motion/levelHorizon` are the first stabilization modes, each
+  a per-sample view correction (ADR 0006). Still to come: a smoothed-heading mode, and a slerp to
+  sample attitude or correction at a frame's time.
 
 ### Later
 
