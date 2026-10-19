@@ -1,10 +1,6 @@
+import type { MotionSample } from '../../model/recording';
 import type { ByteReader } from '../../shared/binary/byteReader';
-import {
-  degrees,
-  degreesToRadians,
-  microseconds,
-  type Microseconds,
-} from '../../shared/units/units';
+import { degrees, degreesToRadians, microseconds } from '../../shared/units/units';
 import type { Region } from '../mp4/box';
 
 const SAMPLE_SIZE = 20;
@@ -19,15 +15,8 @@ export interface GyroRanges {
   readonly gyroscope: number;
 }
 
-/** One raw IMU sample: a capture timestamp, acceleration in g, and angular velocity in rad/s. */
-export interface GyroSample {
-  readonly timestamp: Microseconds;
-  readonly acceleration: readonly [number, number, number];
-  readonly angularVelocity: readonly [number, number, number];
-}
-
 /**
- * Reads the raw-layout gyro record (id 3) into IMU samples.
+ * Reads the raw-layout gyro record (id 3) into IMU motion samples.
  *
  * @remarks Each 20-byte sample is a `u64` microsecond timestamp, then three accelerometer and
  * three gyroscope components, each an offset-binary `u16` around 32768 scaled by its full-scale
@@ -35,9 +24,9 @@ export interface GyroSample {
  * per second. This is the raw layout the X-series and ONE R write; the older float layout is not
  * read here.
  */
-export function readGyro(reader: ByteReader, region: Region, ranges: GyroRanges): GyroSample[] {
+export function readGyro(reader: ByteReader, region: Region, ranges: GyroRanges): MotionSample[] {
   const count = Math.floor((region.end - region.start) / SAMPLE_SIZE);
-  const samples: GyroSample[] = [];
+  const samples: MotionSample[] = [];
   for (let index = 0; index < count; index += 1) {
     const at = region.start + index * SAMPLE_SIZE;
     samples.push({

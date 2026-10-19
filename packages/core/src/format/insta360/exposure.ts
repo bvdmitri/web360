@@ -1,15 +1,10 @@
+import type { FrameExposure } from '../../model/recording';
 import type { ByteReader } from '../../shared/binary/byteReader';
-import { microseconds, seconds, type Microseconds, type Seconds } from '../../shared/units/units';
+import { microseconds, seconds } from '../../shared/units/units';
 import type { Region } from '../mp4/box';
 
 const ENTRY_SIZE = 16;
 const EXPOSURE_OFFSET = 8;
-
-/** One exposure entry: a capture timestamp and the frame's exposure time. */
-export interface ExposureEntry {
-  readonly timestamp: Microseconds;
-  readonly exposure: Seconds;
-}
 
 /**
  * Reads the exposure record (id 4) into per-frame entries.
@@ -18,9 +13,9 @@ export interface ExposureEntry {
  * The timestamp shares the recording's capture clock, microseconds in the raw-gyro layout. Entries
  * begin a few frames before the first encoded frame.
  */
-export function readExposure(reader: ByteReader, region: Region): ExposureEntry[] {
+export function readExposure(reader: ByteReader, region: Region): FrameExposure[] {
   const count = Math.floor((region.end - region.start) / ENTRY_SIZE);
-  const entries: ExposureEntry[] = [];
+  const entries: FrameExposure[] = [];
   for (let index = 0; index < count; index += 1) {
     const at = region.start + index * ENTRY_SIZE;
     entries.push({

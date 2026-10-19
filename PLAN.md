@@ -39,19 +39,20 @@ for the layering.
   (codec, coded size, NAL length size), and its samples placed and timed on the media clock from
   the sample tables. A fragmented file is refused. See
   [docs/FORMAT-iso-bmff.md](./docs/FORMAT-iso-bmff.md) and ADR 0002.
+- **The recording model** (`model/`). `CameraRecording`, the one vendor-neutral shape every reader
+  fills and every computation reads: metadata, lens optics, motion samples and frame timing. The
+  optics are a provisional v1 fisheye until a second vendor lands. See ADR 0003.
+- **Insta360 reader** (`format/insta360`). Reads a recording's trailer (contiguous or indexed) and
+  its info, gyro, exposure and v1 calibration records, parses file names, and assembles them into a
+  `CameraRecording`, confirmed on the real ONE R fixture.
 
-### Insta360 and GoPro readers
+### Remaining readers
 
-In order:
-
-1. **Fixtures.** Short, face-free clips cut from real recordings, held in Git LFS, each with a
-   manifest entry of origin and coverage. See [docs/SAMPLES.md](./docs/SAMPLES.md).
-2. **Insta360 reader** (`format/insta360`): the trailer (indexed and contiguous), the info, gyro,
-   exposure and trim records, the file-name pairing, and the calibration strings.
-3. **GoPro reader** (`format/gopro`): the `.360` container and its projection, and the GPMF
-   telemetry track.
-4. **The model and `open()`**: the vendor-neutral `CameraRecording` the readers fill, and the
-   public entry point that returns it.
+- **GoPro reader** (`format/gopro`): the `.360` container and its EAC projection, and the GPMF
+  telemetry track, filling the same `CameraRecording` and generalising the optics. Needs its own
+  de-identified fixture cut from the GoPro MAX `.360`.
+- **`open()`**: the public, vendor-agnostic entry point that reads a source into a
+  `CameraRecording`, wiring the byte source and a split recording's two files through adapters.
 
 The MP4 edit list (a track's presentation shift) is a later refinement of `format/mp4`, added when
 a consumer needs presentation time rather than media-clock time.
@@ -70,16 +71,14 @@ a consumer needs presentation time rather than media-clock time.
 
 ## Current state and next step
 
-The container reader (`format/mp4`) is complete, and the vendor side is underway on a
-de-identified Insta360 ONE R fixture (`test/fixtures/insta360/oner-split-00.insv`). `format/insta360`
-locates the trailer, lists its records (contiguous or indexed), and reads the info record (a small
-built-in protobuf scanner gives the model, frame size, frame rate, first-frame timestamp, rolling
-shutter, gyro offset and ranges, and the raw calibration string), the gyro record (raw-layout IMU
-samples in g and rad/s), the exposure record (per-frame timestamp and exposure time), and the v1
-calibration string (a pose per lens and the pixel canvas), and names (parsing an Insta360 file
-name and the key the `_00_`/`_10_` halves of a recording share). The next task defines the
-vendor-neutral model (`model/`) and assembles it: an Insta360 recording's metadata, optics, motion
-and timing from these records plus its container tracks, the shape `open()` will return.
+The Insta360 path is complete to the model: `readInsta360Recording` turns the real ONE R fixture
+into a `CameraRecording` (metadata, two lens optics, 145232 motion samples, exposures, rolling
+shutter, capture clock), on top of the finished `format/mp4` container reader. Two directions open
+from here. One is the GoPro reader: cut a de-identified fixture from the GoPro MAX `.360`, read its
+EAC container and GPMF telemetry into the same `CameraRecording`, and generalise the optics for a
+cube map. The other is processing the model: orientation from the motion samples, the camera
+projection from the optics, and stitching behind a GPU port. `open()` (the public entry wiring a
+byte source and a split recording's two files) comes with the adapters.
 
 To resume: `pnpm install`, then `pnpm verify` should be green. Read [CLAUDE.md](./CLAUDE.md), then
 the document in [docs/](./docs) for the area about to change.
