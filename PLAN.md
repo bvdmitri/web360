@@ -34,25 +34,27 @@ for the layering.
   dashes stay out of commits), and CI.
 - **Core foundations.** Branded units (`shared/units`) and a bounds-checked byte reader
   (`shared/binary`) that reads little- and big-endian integers, floats and text.
-- **Container box layer** (`format/mp4`). Walks the ISO base media file box tree (a 32-bit size, a
-  64-bit largesize, or a size that runs to the end of its region), finds and walks boxes, and
-  refuses a malformed size. See [docs/FORMAT-iso-bmff.md](./docs/FORMAT-iso-bmff.md).
+- **Container reader** (`format/mp4`). Walks the ISO base media file box tree and assembles a
+  `moov` into a movie of tracks: each track's id, handler, media timescale, visual sample entry
+  (codec, coded size, NAL length size), and its samples placed and timed on the media clock from
+  the sample tables. A fragmented file is refused. See
+  [docs/FORMAT-iso-bmff.md](./docs/FORMAT-iso-bmff.md) and ADR 0002.
 
 ### Insta360 and GoPro readers
 
 In order:
 
-1. **MP4 sample table** (`format/mp4`): the movie header, the tracks (id, timescales, handler),
-   the sample entry and its codec, the time, size, chunk and sync tables, the edit list, and
-   timing to the sample. Fragmented files are refused.
-2. **Fixtures.** Short, face-free clips cut from real recordings, held in Git LFS, each with a
+1. **Fixtures.** Short, face-free clips cut from real recordings, held in Git LFS, each with a
    manifest entry of origin and coverage. See [docs/SAMPLES.md](./docs/SAMPLES.md).
-3. **Insta360 reader** (`format/insta360`): the trailer (indexed and contiguous), the info, gyro,
+2. **Insta360 reader** (`format/insta360`): the trailer (indexed and contiguous), the info, gyro,
    exposure and trim records, the file-name pairing, and the calibration strings.
-4. **GoPro reader** (`format/gopro`): the `.360` container and its projection, and the GPMF
+3. **GoPro reader** (`format/gopro`): the `.360` container and its projection, and the GPMF
    telemetry track.
-5. **The model and `open()`**: the vendor-neutral `CameraRecording` the readers fill, and the
+4. **The model and `open()`**: the vendor-neutral `CameraRecording` the readers fill, and the
    public entry point that returns it.
+
+The MP4 edit list (a track's presentation shift) is a later refinement of `format/mp4`, added when
+a consumer needs presentation time rather than media-clock time.
 
 ### Later
 
@@ -68,11 +70,11 @@ In order:
 
 ## Current state and next step
 
-The container reader (`format/mp4`) walks the box tree and reads the pieces of a track: the movie
-and media timescales, the track id, the handler, the visual sample entry (codec, coded size, NAL
-length size), and the sample-table boxes (`stts`, `ctts`, `stss`, `stsz`, `stsc`, `stco` and
-`co64`). The next task assembles these into a movie of tracks, each with its edit list and its
-samples timed to the media clock, and refuses a fragmented file.
+The container reader (`format/mp4`) is complete: `readMovie` turns a `moov` into a movie of tracks
+with each sample placed and timed on its media clock, refusing fragmented files. The next task
+starts the vendor side: cut a couple of short, face-free fixtures from real recordings, then read
+the Insta360 trailer (the info, gyro, exposure and calibration records) and pair a recording's
+files, building toward the vendor-neutral model.
 
 To resume: `pnpm install`, then `pnpm verify` should be green. Read [CLAUDE.md](./CLAUDE.md), then
 the document in [docs/](./docs) for the area about to change.
