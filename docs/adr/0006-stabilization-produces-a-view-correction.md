@@ -25,9 +25,12 @@ the modes differ only in what of the camera's motion they keep.
   rather than failing.
 - **Smoothed heading** keeps the horizon level the same way, but the view's heading follows an
   exponential smoothing of the camera's heading rather than following it exactly: each sample
-  slerps the running heading toward the camera's by `1 - exp(-dt / timeConstant)`. A slow,
-  deliberate pan comes through; jitter does not. The time constant is the mode's tuning surface, a
-  larger one smoothing toward a locked heading and a vanishing one reducing to horizon leveling.
+  slerps the running heading toward the camera's by `1 - exp(-dt / timeConstant)`, forward through
+  the stream and then backward over the result. Smoothing both ways in time is what keeps a
+  deliberate pan from lagging: a one-way filter trails it by about the time constant, and the
+  backward pass leads by the same amount. It needs the whole stream, which a recording has. The time
+  constant is the mode's tuning surface, a larger one smoothing toward a locked heading and a
+  vanishing one reducing to horizon leveling.
 
 ## Consequences
 

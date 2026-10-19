@@ -58,39 +58,62 @@ export function levelHorizon(orientation: readonly OrientationSample[]): Stabili
 }
 
 /**
- * Levels the horizon and lets the heading follow a low-pass of the camera's heading.
+ * Levels the horizon and lets the heading follow a low-pass of the camera's heading, smoothed both
+ * ways in time.
  *
  * @remarks Like {@link levelHorizon}, the stabilized view is a pure rotation about the vertical, so
- * the horizon stays flat. Its heading does not follow the camera exactly but an exponential
- * smoothing of it (a slerp toward each sample's heading, per-step weight `1 - exp(-dt /
- * timeConstant)`), so a slow deliberate pan comes through while jitter does not. A larger
- * `timeConstant` smooths harder, toward a locked heading; a very small one follows the heading
- * exactly, as {@link levelHorizon} does. The time constant is the tuning surface, not a contract.
+ * the horizon stays flat. Its heading follows an exponential smoothing of the camera's heading (a
+ * slerp toward each sample's heading, per-step weight `1 - exp(-dt / timeConstant)`), run forward
+ * through the stream and then backward over the result. A one-way filter trails a deliberate pan by
+ * about the time constant; the backward pass leads by the same amount, so a steady pan comes through
+ * without delay while jitter is filtered twice. This needs the whole stream, which a recording has.
+ * A larger `timeConstant` smooths harder, toward a locked heading; a very small one follows the
+ * heading exactly, as {@link levelHorizon} does. The time constant is the tuning surface, not a
+ * contract.
  */
 export function smoothHeading(
   orientation: readonly OrientationSample[],
   timeConstant: Seconds,
 ): StabilizationSample[] {
-  const out: StabilizationSample[] = [];
-  let smoothed = identity();
-  let previous: Microseconds | undefined;
-  for (const sample of orientation) {
-    const heading = headingAbout(sample.orientation, WORLD_UP);
-    smoothed =
+  const track = orientation.map((sample) => ({
+    timestamp: sample.timestamp,
+    orientation: sample.orientation,
+    heading: headingAbout(sample.orientation, WORLD_UP),
+  }));
+  const forward = exponentialPass(track, timeConstant);
+  const both = exponentialPass(forward.toReversed(), timeConstant).toReversed();
+  return both.map((item) => ({
+    timestamp: item.timestamp,
+    correction: multiply(item.heading, conjugate(item.orientation)),
+  }));
+}
+
+interface HeadingTrack {
+  readonly timestamp: Microseconds;
+  readonly orientation: Quaternion;
+  readonly heading: Quaternion;
+}
+
+function exponentialPass(track: readonly HeadingTrack[], timeConstant: Seconds): HeadingTrack[] {
+  const out: HeadingTrack[] = [];
+  let previous: HeadingTrack | undefined;
+  for (const item of track) {
+    const heading =
       previous === undefined
-        ? heading
-        : slerp(smoothed, heading, weight(previous, sample.timestamp, timeConstant));
-    out.push({
-      timestamp: sample.timestamp,
-      correction: multiply(smoothed, conjugate(sample.orientation)),
-    });
-    previous = sample.timestamp;
+        ? item.heading
+        : slerp(
+            previous.heading,
+            item.heading,
+            weight(previous.timestamp, item.timestamp, timeConstant),
+          );
+    previous = { ...item, heading };
+    out.push(previous);
   }
   return out;
 }
 
 function weight(previous: Microseconds, now: Microseconds, timeConstant: Seconds): number {
-  const dt = (now - previous) / MICROS_PER_SECOND;
+  const dt = Math.abs(now - previous) / MICROS_PER_SECOND;
   return 1 - Math.exp(-dt / timeConstant);
 }
 

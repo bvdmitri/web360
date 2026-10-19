@@ -159,6 +159,29 @@ describe('smooth heading', () => {
     }
   });
 
+  it('does not lag a steady pan, because it smooths both ways in time', () => {
+    // A 0.3 rad/s pan at 10 Hz for 20 s; a one-way filter would trail it by about rate times the
+    // time constant (0.3 rad here) all the way through.
+    const stream: OrientationSample[] = [];
+    for (let index = 0; index < 200; index += 1) stream.push(aboutZ(index * 100_000, index * 0.03));
+    const smoothed = smoothHeading(stream, seconds(1));
+    const view = multiply(smoothed[100]!.correction, stream[100]!.orientation);
+    expect(2 * Math.atan2(view.z, view.w)).toBeCloseTo(3, 2);
+  });
+
+  it('still removes jitter around the pan', () => {
+    const stream: OrientationSample[] = [];
+    for (let index = 0; index < 200; index += 1) {
+      stream.push(aboutZ(index * 100_000, index * 0.01 + (index % 2 === 0 ? 0.05 : -0.05)));
+    }
+    const smoothed = smoothHeading(stream, seconds(1));
+    const headingAt = (index: number): number => {
+      const view = multiply(smoothed[index]!.correction, stream[index]!.orientation);
+      return 2 * Math.atan2(view.z, view.w);
+    };
+    expect(Math.abs(headingAt(101) - headingAt(100) - 0.01)).toBeLessThan(0.002);
+  });
+
   it('keeps the camera clock and returns nothing for an empty stream', () => {
     expect(smoothHeading([], seconds(1)).length).toBe(0);
     const stream = [aboutZ(0, 0), aboutZ(ONE_SECOND, 0.5)];
