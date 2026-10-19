@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ByteReader } from '../../shared/binary/byteReader';
 import { findBox, regionOf } from './box';
-import { readMovie } from './movie';
+import { readMovie, samplesOf } from './movie';
 
 const fixture = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -25,7 +25,7 @@ describe('mp4 movie, on a real Insta360 ONE R recording', () => {
     const video = movie.tracks.find((track) => track.handler === 'vide');
     if (video === undefined) throw new Error('the fixture has no video track');
     expect(video.sampleEntry).toMatchObject({ format: 'avc1', width: 2880, height: 2880 });
-    expect(video.samples).toHaveLength(4299);
+    expect(samplesOf(video)).toHaveLength(4299);
 
     expect(movie.tracks.some((track) => track.handler === 'soun')).toBe(true);
   });

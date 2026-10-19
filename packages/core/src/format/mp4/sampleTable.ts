@@ -11,16 +11,6 @@ const CHUNK32_ENTRY = 4;
 const CHUNK64_ENTRY = 8;
 const SIZE_HEADER = 8;
 
-/**
- * The most samples web360 reads from one track.
- *
- * @remarks A sample count is a free 32-bit field, so a malformed file could claim billions and
- * exhaust memory as the tables expand. A count beyond this is refused when the size table is read,
- * and the timeline never materializes more than this many samples. It is far above any real
- * recording (over nine hours at 60 frames a second).
- */
-export const MAX_SAMPLES = 1_048_576;
-
 /** A run of consecutive samples that share a duration, from the `stts` box. */
 export interface TimeToSampleEntry {
   readonly count: number;
@@ -105,13 +95,6 @@ export function readSampleSizes(reader: ByteReader, box: Box): SampleSizes {
   const { fieldsStart } = readFullBox(reader, box);
   const uniformSize = reader.u32be(fieldsStart);
   const count = reader.u32be(fieldsStart + FIELD);
-  if (count > MAX_SAMPLES) {
-    throw new MalformedBoxError(
-      box.type,
-      box.start,
-      `declares ${count} samples, beyond the ${MAX_SAMPLES} supported`,
-    );
-  }
   if (uniformSize !== 0) return { count, uniformSize, sizes: [] };
   const base = fieldsStart + SIZE_HEADER;
   guardFit(box, base + count * FIELD);

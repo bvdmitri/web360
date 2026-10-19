@@ -1,10 +1,20 @@
-import {
-  MAX_SAMPLES,
-  type CompositionOffsetEntry,
-  type SampleSizes,
-  type SampleToChunkEntry,
-  type TimeToSampleEntry,
+import type {
+  CompositionOffsetEntry,
+  SampleSizes,
+  SampleToChunkEntry,
+  TimeToSampleEntry,
 } from './sampleTable';
+
+/**
+ * The most samples the timeline expands for one track.
+ *
+ * @remarks A sample count is a free 32-bit field, so a malformed file could claim billions.
+ * {@link buildSamples} never materializes more than this many, which bounds the work on such a
+ * file. It is far above any real recording (over nine hours at 60 frames a second). Reading the
+ * sample tables stays cheap for a larger count (a uniform size or a bounded chunk list); only
+ * expansion is capped.
+ */
+const MAX_SAMPLES = 1_048_576;
 
 /** Where one sample's bytes are and when it decodes and composes, on the track's media clock. */
 export interface Sample {

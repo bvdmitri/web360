@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ByteReader } from '../../shared/binary/byteReader';
 import { readBox } from './box';
-import { readMovie, UnsupportedContainerError } from './movie';
+import { readMovie, samplesOf, UnsupportedContainerError } from './movie';
 
 const ascii = (text: string): number[] => Array.from(text, (c) => c.codePointAt(0) ?? 0);
 const u16be = (n: number): number[] => [(n >>> 8) & 0xff, n & 0xff];
@@ -82,14 +82,15 @@ describe('mp4 movie', () => {
     expect(movie.timescale).toBe(1000);
     expect(movie.tracks).toHaveLength(1);
     const [track] = movie.tracks;
+    if (track === undefined) throw new Error('the movie has no track');
     expect(track).toMatchObject({ id: 1, handler: 'vide', timescale: 90_000 });
-    expect(track?.sampleEntry).toEqual({
+    expect(track.sampleEntry).toEqual({
       format: 'hvc1',
       width: 1920,
       height: 1080,
       nalLengthSize: 4,
     });
-    expect(track?.samples).toEqual([
+    expect(samplesOf(track)).toEqual([
       { offset: 9000, size: 5000, decodeTime: 0, compositionTime: 0, duration: 3000, isSync: true },
       {
         offset: 14_000,
@@ -109,9 +110,10 @@ describe('mp4 movie', () => {
     const movie = open(box('moov', [...mvhd(1000), ...trak]));
 
     const [track] = movie.tracks;
-    expect(track?.handler).toBe('soun');
-    expect(track?.sampleEntry).toBeUndefined();
-    expect(track?.samples).toHaveLength(1);
+    if (track === undefined) throw new Error('the movie has no track');
+    expect(track.handler).toBe('soun');
+    expect(track.sampleEntry).toBeUndefined();
+    expect(samplesOf(track)).toHaveLength(1);
   });
 
   it('refuses a fragmented file', () => {

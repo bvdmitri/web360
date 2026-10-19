@@ -17,13 +17,19 @@ const TRAK = 'trak';
 const MVEX = 'mvex';
 const VIDEO_HANDLER = 'vide';
 
-/** A decoded track: its id, what it carries, its clock, its codec and its placed, timed samples. */
+/**
+ * A decoded track: its id, what it carries, its clock, its codec and its sample tables.
+ *
+ * @remarks The samples are not expanded here; {@link samplesOf} places and times them on demand.
+ * Reading the tables is cheap even for a track of many samples (a long audio track), so a reader
+ * materialises only the tracks it needs rather than every track of a movie.
+ */
 export interface Track {
   readonly id: number;
   readonly handler: string;
   readonly timescale: number;
   readonly sampleEntry: VisualSampleEntry | undefined;
-  readonly samples: readonly Sample[];
+  readonly tables: SampleTables;
 }
 
 /** A decoded movie: the movie timescale and the tracks it holds. */
@@ -74,8 +80,13 @@ function readTrack(reader: ByteReader, trak: Box): Track {
     handler,
     timescale: readTimescale(reader, mustFind(reader, mdia, 'mdhd')),
     sampleEntry: videoEntry(reader, handler, stbl),
-    samples: buildSamples(readSampleTables(reader, stbl)),
+    tables: readSampleTables(reader, stbl),
   };
+}
+
+/** Places and times a track's samples on its media clock, expanded on demand. */
+export function samplesOf(track: Track): Sample[] {
+  return buildSamples(track.tables);
 }
 
 function videoEntry(reader: ByteReader, handler: string, stbl: Box): VisualSampleEntry | undefined {

@@ -13,7 +13,13 @@ and how far it resolves timing before a consumer asks.
 
 - `readMovie` turns a `moov` box into a `Movie`: the movie timescale and one `Track` per `trak`. A
   track carries its id, handler, media timescale, its visual sample entry when it is a video
-  track, and its samples.
+  track, and its sample tables.
+- **Samples are expanded on demand, not when the movie is read.** A track holds its tables;
+  `samplesOf(track)` places and times its samples when a reader asks. Reading the tables is cheap
+  even for a track of millions of samples (a long audio track's size is a single uniform value and
+  its chunk list is short), so a reader materialises only the tracks it needs and a malformed
+  count costs nothing until something expands it (bounded there, see ADR 0003's model work and the
+  timeline cap).
 - A sample is placed and timed on the track's own media clock. Its file offset comes from the
   chunk tables and the sizes before it in its chunk; its decode time is the running sum of the
   `stts` durations; its composition time adds the `ctts` offset; its sync flag comes from `stss`,
