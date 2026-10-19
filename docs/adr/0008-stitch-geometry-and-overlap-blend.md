@@ -31,9 +31,12 @@ the reference the GPU shader implements.
 - With the ONE R's overlapping lenses the two margins give a linear cross-fade through the seam; it
   is a partition of unity over the whole sphere, proven by a test summing the weights to one for any
   output direction.
-- The feather is deliberately simple. It does not match exposure across the seam or blend across
-  multiple frequency bands, so a visible exposure step or a doubled edge at the seam is expected
-  until those land (M8+). Both are refinements layered on the same lens selection, not changes to it.
+- The feather is deliberately simple. Exposure is matched separately: `stitch/estimateGains` averages
+  what each lens records over the overlap and scales each lens, per channel, onto the geometric mean,
+  which removes the brightness and colour step between the lenses (on the ONE R the two disagree by
+  about a quarter, differently per channel). It is a single gain per lens, so it does not undo
+  vignetting, which darkens both lenses toward their edges and so toward the seam; a multiband blend
+  for doubled edges is also still to come. Both layer on the same lens selection, not changes to it.
 - The geometry is frame-consistent but not yet aligned to the camera's real forward or the image's
   pixel-row order; those conventions (ADR 0007's pose, this frame) are the first things a wrong-
   looking stitch will expose, and each is an isolated constant.

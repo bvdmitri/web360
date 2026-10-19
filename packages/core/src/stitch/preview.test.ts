@@ -11,6 +11,7 @@ import { readInsta360Recording } from '../format/insta360/recording';
 import { readTrailer } from '../format/insta360/trailer';
 import { ByteReader } from '../shared/binary/byteReader';
 import { identity } from '../shared/math/quaternion';
+import { estimateGains } from './gains';
 import { renderEquirectangular, type LensSampler, type Rgb, type Scene } from './render';
 
 // A developer harness, not a CI test: point WEB360_PREVIEW_INSV at the `_00_` half of a real
@@ -23,6 +24,7 @@ const footage = process.env['WEB360_PREVIEW_INSV'];
 const OUT_WIDTH = 1024;
 const OUT_HEIGHT = 512;
 const BYTE_MAX = 255;
+const GAIN_GRID = { width: 256, height: 128 };
 const tints: Rgb[] = [
   [1, 0.55, 0.55],
   [0.55, 0.55, 1],
@@ -155,12 +157,19 @@ describe('stitch preview (developer harness)', () => {
           ? chosen
           : chosen.map((sampler, index) => tint(sampler, tints[index] ?? [1, 1, 1]));
 
+      const gains =
+        process.env['WEB360_PREVIEW_GAIN'] === '0'
+          ? undefined
+          : estimateGains(recording.lenses, chosen, GAIN_GRID);
+      writeFileSync(`${outPng}.gains.json`, JSON.stringify(gains ?? null));
+
       const scene: Scene = {
         lenses: recording.lenses,
         samplers: tinted,
         correction: identity(),
         width: OUT_WIDTH,
         height: OUT_HEIGHT,
+        ...(gains !== undefined && { gains }),
       };
       encodePng(toBytes(renderEquirectangular(scene)), outPng);
 
