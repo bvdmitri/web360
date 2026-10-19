@@ -25,12 +25,14 @@ export function readInsta360Recording(reader: ByteReader): CameraRecording {
   const records = readTrailer(reader).records;
   const info = readInfo(reader, regionById(records, INFO));
   const ranges = { accelerometer: info.accelerometerRange, gyroscope: info.gyroscopeRange };
+  const imu = readGyro(reader, regionById(records, GYRO), ranges);
   return {
     model: info.model,
     frameRate: info.frameRate,
     frame: { width: info.width, height: info.height },
     lenses: readCalibration(info.calibration).lenses.map((pose) => toOptics(pose)),
-    motion: readGyro(reader, regionById(records, GYRO), ranges),
+    angularVelocity: imu.angularVelocity,
+    acceleration: imu.acceleration,
     exposures: readExposure(reader, regionById(records, EXPOSURE)),
     rollingShutter: seconds(info.rollingShutterMs / MS_PER_SECOND),
     captureClock: microseconds(info.firstFrameTimestamp),

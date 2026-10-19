@@ -8,6 +8,7 @@ const ACCEL_OFFSET = 8;
 const GYRO_OFFSET = 14;
 const COMPONENT_SIZE = 2;
 const OFFSET_BINARY_MID = 32_768;
+const GRAVITY = 9.80665;
 
 /** The accelerometer and gyroscope full-scale ranges, from the info record. */
 export interface GyroRanges {
@@ -15,27 +16,43 @@ export interface GyroRanges {
   readonly gyroscope: number;
 }
 
+/** The angular-velocity (rad/s) and acceleration (m/s^2) streams split from one fused record. */
+export interface ImuStreams {
+  readonly angularVelocity: MotionSample[];
+  readonly acceleration: MotionSample[];
+}
+
 /**
- * Reads the raw-layout gyro record (id 3) into IMU motion samples.
+ * Reads the raw-layout gyro record (id 3) into the angular-velocity and acceleration streams.
  *
  * @remarks Each 20-byte sample is a `u64` microsecond timestamp, then three accelerometer and
  * three gyroscope components, each an offset-binary `u16` around 32768 scaled by its full-scale
- * range. Acceleration stays in g; angular velocity converts from degrees per second to radians
- * per second. This is the raw layout the X-series and ONE R write; the older float layout is not
- * read here.
+ * range. The record fuses both sensors on one timestamp, so the two streams it yields share their
+ * timestamps. Acceleration converts from g to m/s^2; angular velocity from degrees per second to
+ * radians per second. This is the raw layout the X-series and ONE R write; the older float layout
+ * is not read here.
  */
-export function readGyro(reader: ByteReader, region: Region, ranges: GyroRanges): MotionSample[] {
+export function readGyro(reader: ByteReader, region: Region, ranges: GyroRanges): ImuStreams {
   const count = Math.floor((region.end - region.start) / SAMPLE_SIZE);
-  const samples: MotionSample[] = [];
+  const angularVelocity: MotionSample[] = [];
+  const acceleration: MotionSample[] = [];
   for (let index = 0; index < count; index += 1) {
     const at = region.start + index * SAMPLE_SIZE;
-    samples.push({
-      timestamp: microseconds(reader.u64le(at)),
-      acceleration: triple(reader, at + ACCEL_OFFSET, ranges.accelerometer),
-      angularVelocity: angular(triple(reader, at + GYRO_OFFSET, ranges.gyroscope)),
+    const timestamp = microseconds(reader.u64le(at));
+    acceleration.push({
+      timestamp,
+      value: metric(triple(reader, at + ACCEL_OFFSET, ranges.accelerometer)),
+    });
+    angularVelocity.push({
+      timestamp,
+      value: angular(triple(reader, at + GYRO_OFFSET, ranges.gyroscope)),
     });
   }
-  return samples;
+  return { angularVelocity, acceleration };
+}
+
+function metric(inG: readonly [number, number, number]): [number, number, number] {
+  return [inG[0] * GRAVITY, inG[1] * GRAVITY, inG[2] * GRAVITY];
 }
 
 function triple(reader: ByteReader, at: number, range: number): [number, number, number] {

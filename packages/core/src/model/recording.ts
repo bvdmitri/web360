@@ -30,11 +30,18 @@ export interface LensOptics {
   readonly orientation: Orientation;
 }
 
-/** One motion sample on the capture clock: angular velocity in rad/s and acceleration in g. */
+/**
+ * One motion sample on the capture clock: a timestamped 3-vector.
+ *
+ * @remarks The {@link CameraRecording} field that holds the sample says what the vector is:
+ * `angularVelocity` in rad/s, `acceleration` in m/s^2. A sample carries one sensor's reading at
+ * one instant, and the two sensors are separate streams because a camera may log them at different
+ * rates: a GoPro records its gyroscope several times faster than its accelerometer, where an
+ * Insta360 fuses both into one tick (there the two streams share their timestamps).
+ */
 export interface MotionSample {
   readonly timestamp: Microseconds;
-  readonly angularVelocity: readonly [number, number, number];
-  readonly acceleration: readonly [number, number, number];
+  readonly value: readonly [number, number, number];
 }
 
 /** One frame's capture time and exposure duration. */
@@ -51,13 +58,17 @@ export interface FrameExposure {
  * it without knowing the vendor. It is telemetry, optics and timing, not pixels: a frame's bytes
  * are decoded through a port at processing time, not held here. `captureClock` is the first
  * frame's timestamp, the origin the motion and exposure timestamps share.
+ *
+ * `angularVelocity` (rad/s) and `acceleration` (m/s^2) are separate streams on that clock, each at
+ * its sensor's own rate.
  */
 export interface CameraRecording {
   readonly model: string;
   readonly frameRate: number;
   readonly frame: Dimensions;
   readonly lenses: readonly LensOptics[];
-  readonly motion: readonly MotionSample[];
+  readonly angularVelocity: readonly MotionSample[];
+  readonly acceleration: readonly MotionSample[];
   readonly exposures: readonly FrameExposure[];
   readonly rollingShutter: Seconds;
   readonly captureClock: Microseconds;

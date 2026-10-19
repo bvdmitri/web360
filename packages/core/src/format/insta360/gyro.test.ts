@@ -38,20 +38,24 @@ const fixture = path.resolve(
 );
 
 describe('insta360 gyro record', () => {
-  it('scales offset-binary samples to g and rad/s', () => {
+  it('scales offset-binary samples to metres per second squared and radians per second', () => {
     const bytes = [
       ...sample(1000, [49_152, 32_768, 32_768], [32_768, 32_768, 32_768]),
       ...sample(2000, [32_768, 32_768, 32_768], [49_152, 32_768, 32_768]),
     ];
-    const samples = readGyro(reader(...bytes), { start: 0, end: bytes.length }, ranges);
-    expect(samples).toHaveLength(2);
-    expect(samples[0]).toEqual({
-      timestamp: 1000,
-      acceleration: [16, 0, 0],
-      angularVelocity: [0, 0, 0],
-    });
-    expect(samples[1]?.timestamp).toBe(2000);
-    expect(samples[1]?.angularVelocity[0]).toBeCloseTo((Math.PI / 180) * 1000, 4);
+    const { angularVelocity, acceleration } = readGyro(
+      reader(...bytes),
+      { start: 0, end: bytes.length },
+      ranges,
+    );
+    expect(acceleration).toHaveLength(2);
+    expect(angularVelocity).toHaveLength(2);
+    expect(acceleration[0]?.timestamp).toBe(1000);
+    expect(acceleration[0]?.value[0]).toBeCloseTo(16 * 9.80665, 6);
+    expect([acceleration[0]?.value[1], acceleration[0]?.value[2]]).toEqual([0, 0]);
+    expect(angularVelocity[0]?.value).toEqual([0, 0, 0]);
+    expect(angularVelocity[1]?.timestamp).toBe(2000);
+    expect(angularVelocity[1]?.value[0]).toBeCloseTo((Math.PI / 180) * 1000, 4);
   });
 
   it('reads a real ONE R gyro track at 1 kHz', () => {
@@ -61,13 +65,14 @@ describe('insta360 gyro record', () => {
     const gyro = trailer.records.find((rec) => rec.id === 3);
     if (info === undefined || gyro === undefined) throw new Error('the fixture lacks a record');
     const read = readInfo(r, info.region);
-    const samples = readGyro(r, gyro.region, {
+    const { angularVelocity, acceleration } = readGyro(r, gyro.region, {
       accelerometer: read.accelerometerRange,
       gyroscope: read.gyroscopeRange,
     });
-    expect(samples).toHaveLength(145_232);
-    expect(samples[0]?.timestamp).toBe(2_520_050);
-    expect(samples[1]!.timestamp - samples[0]!.timestamp).toBe(1000);
-    expect(Math.hypot(...samples[0]!.acceleration)).toBeCloseTo(1.02, 1);
+    expect(angularVelocity).toHaveLength(145_232);
+    expect(acceleration).toHaveLength(145_232);
+    expect(angularVelocity[0]?.timestamp).toBe(2_520_050);
+    expect(angularVelocity[1]!.timestamp - angularVelocity[0]!.timestamp).toBe(1000);
+    expect(Math.hypot(...acceleration[0]!.value)).toBeCloseTo(1.02 * 9.80665, 0);
   });
 });

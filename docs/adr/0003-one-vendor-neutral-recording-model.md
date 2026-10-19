@@ -13,16 +13,24 @@ shape, or each would carry the others' quirks.
 
 - **`CameraRecording` is the one shape every reader fills and every computation reads.** It holds
   what a recording is (model, frame rate, frame size), how its lenses see (`LensOptics`), how it
-  moved (`MotionSample`), how its frames are timed (`FrameExposure`, a rolling shutter, a capture
-  clock). A reader under `format/<vendor>/` maps its files into it; nothing downstream knows the
-  vendor.
+  moved (two `MotionSample` streams, `angularVelocity` and `acceleration`), how its frames are
+  timed (`FrameExposure`, a rolling shutter, a capture clock). A reader under `format/<vendor>/`
+  maps its files into it; nothing downstream knows the vendor.
+- **Motion is two independently-timed streams, not one fused sample.** `angularVelocity` and
+  `acceleration` are separate lists on the capture clock, each at its sensor's own rate. GoPro
+  records its gyroscope faster than its accelerometer (around 800 Hz against 200 Hz), so a single
+  fused sample per tick cannot hold its telemetry without inventing accelerometer readings, which
+  an analysis library must not do. An Insta360's fused record splits into the two streams sharing
+  their timestamps, which is lossless.
 - **It is telemetry, optics and timing, not pixels.** A frame's bytes are decoded through a port
   at processing time, so the model carries no video tracks and stays free of I/O. This is why a
   split recording's two lens files do not appear as two tracks here: the model states the two
   lenses' optics, and the adapter hands over each lens's frames when asked.
 - **Quantities are branded units.** Timestamps are microseconds on the capture clock, exposure
   and the rolling shutter are seconds, orientations are degrees; vectors (angular velocity in
-  rad/s, acceleration in g) are plain number triples until the motion layer gives them a type.
+  rad/s, acceleration in m/s^2) are plain number triples until the motion layer gives them a type.
+  Acceleration is SI, so a reader whose camera reports g (Insta360) converts it; GoPro already
+  writes m/s^2.
 - **The optics are provisional.** `LensOptics` and its `LensProjection` describe the v1 fisheye
   lenses the ONE R writes. The projection is a union that will grow (the Mei model, the GoPro cube
   map), and the optics will generalise when the second vendor lands rather than being guessed now.
