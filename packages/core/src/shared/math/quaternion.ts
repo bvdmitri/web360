@@ -59,6 +59,29 @@ export function fromRotationVector(v: Vector3): Quaternion {
   return { w: Math.cos(theta / 2), x: v[0] * scale, y: v[1] * scale, z: v[2] * scale };
 }
 
+const NEARLY_PARALLEL = 0.9995;
+
+/**
+ * Spherical linear interpolation between two unit rotations, `t` from `a` (0) to `b` (1).
+ *
+ * @remarks Follows the shorter arc (a quaternion and its negation are the same rotation, so `b` is
+ * negated when that is closer) at a constant angular rate, which is what sampling an attitude or a
+ * correction between its stored samples needs. When the two are nearly parallel it falls back to a
+ * normalized linear blend, where the great-circle formula would divide by a vanishing sine.
+ */
+export function slerp(a: Quaternion, b: Quaternion, t: number): Quaternion {
+  const aligned = a.w * b.w + a.x * b.x + a.y * b.y + a.z * b.z;
+  const end = aligned < 0 ? negate(b) : b;
+  const dot = Math.abs(aligned);
+  if (dot > NEARLY_PARALLEL) return normalize(lerp(a, end, t));
+  const theta = Math.acos(dot);
+  const sinTheta = Math.sin(theta);
+  return add4(
+    scale4(a, Math.sin((1 - t) * theta) / sinTheta),
+    scale4(end, Math.sin(t * theta) / sinTheta),
+  );
+}
+
 /** `v` rotated by the unit quaternion `q`. */
 export function rotate(q: Quaternion, v: Vector3): Vector3 {
   const [x, y, z] = v;
@@ -70,4 +93,25 @@ export function rotate(q: Quaternion, v: Vector3): Vector3 {
     y + q.w * ty + (q.z * tx - q.x * tz),
     z + q.w * tz + (q.x * ty - q.y * tx),
   ];
+}
+
+function negate(q: Quaternion): Quaternion {
+  return { w: -q.w, x: -q.x, y: -q.y, z: -q.z };
+}
+
+function lerp(a: Quaternion, b: Quaternion, t: number): Quaternion {
+  return {
+    w: a.w + (b.w - a.w) * t,
+    x: a.x + (b.x - a.x) * t,
+    y: a.y + (b.y - a.y) * t,
+    z: a.z + (b.z - a.z) * t,
+  };
+}
+
+function add4(a: Quaternion, b: Quaternion): Quaternion {
+  return { w: a.w + b.w, x: a.x + b.x, y: a.y + b.y, z: a.z + b.z };
+}
+
+function scale4(q: Quaternion, factor: number): Quaternion {
+  return { w: q.w * factor, x: q.x * factor, y: q.y * factor, z: q.z * factor };
 }

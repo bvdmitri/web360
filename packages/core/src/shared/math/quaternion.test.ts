@@ -8,6 +8,7 @@ import {
   multiply,
   normalize,
   rotate,
+  slerp,
   type Quaternion,
   type Vector3,
 } from './quaternion';
@@ -105,5 +106,46 @@ describe('quaternion', () => {
   it('rotates about an axis by the rotation vector length', () => {
     const quarterTurnAboutZ = fromRotationVector([0, 0, Math.PI / 2]);
     expectVecClose(rotate(quarterTurnAboutZ, [1, 0, 0]), [0, 1, 0]);
+  });
+});
+
+describe('slerp', () => {
+  const forward: Vector3 = [1, 0, 0];
+
+  it('returns the endpoints at t of 0 and 1', () => {
+    fc.assert(
+      fc.property(unit, unit, (a, b) => {
+        expectQuatClose(slerp(a, b, 0), a);
+        expectVecClose(rotate(slerp(a, b, 1), forward), rotate(b, forward));
+      }),
+    );
+  });
+
+  it('stays on the unit sphere throughout', () => {
+    fc.assert(
+      fc.property(unit, unit, fc.double({ min: 0, max: 1, noNaN: true }), (a, b, t) => {
+        expect(magnitude(slerp(a, b, t))).toBeCloseTo(1, 9);
+      }),
+    );
+  });
+
+  it('interpolates a turn at a constant angular rate', () => {
+    const halfway = slerp(identity(), fromRotationVector([0, 0, Math.PI / 2]), 0.5);
+    const eighth = Math.PI / 4;
+    expectVecClose(rotate(halfway, forward), [Math.cos(eighth), Math.sin(eighth), 0]);
+  });
+
+  it('falls back to a linear blend for nearly parallel rotations', () => {
+    const tiny = fromRotationVector([0, 0, 1e-5]);
+    const blended = slerp(identity(), tiny, 0.5);
+    const halfTiny = fromRotationVector([0, 0, 5e-6]);
+    expect(magnitude(blended)).toBeCloseTo(1, 9);
+    expectVecClose(rotate(blended, forward), rotate(halfTiny, forward));
+  });
+
+  it('takes the shorter arc when a rotation exceeds half a turn', () => {
+    const past = fromRotationVector([0, 0, 3.5]);
+    const shortest = slerp(identity(), past, 1);
+    expectVecClose(rotate(shortest, forward), rotate(past, forward));
   });
 });
