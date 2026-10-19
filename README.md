@@ -1,8 +1,8 @@
-# omnisphere
+# web360
 
 Functions to read, analyse, stitch, stabilize and process 360 video in the browser.
 
-omnisphere turns a camera's raw 360 recording into data and pictures you can work with: it reads
+web360 turns a camera's raw 360 recording into data and pictures you can work with: it reads
 the recording's telemetry and calibration, computes the camera's motion, stitches the lenses into
 an equirectangular frame, and measures what it did. It is a set of functions, not a player:
 playback, clocks, audio sync and controls belong to the application that uses it.

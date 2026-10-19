@@ -62,7 +62,7 @@ module.exports = {
       name: 'core-does-not-know-outer-layers',
       severity: 'error',
       from: { path: '^packages/core/src' },
-      to: { path: '^(packages/adapters|packages/omnisphere|tools|examples)/' },
+      to: { path: '^(packages/adapters|packages/web360|tools|examples)/' },
     },
     {
       name: 'adapters-depend-only-on-core',

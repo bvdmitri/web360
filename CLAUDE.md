@@ -1,8 +1,12 @@
-# omnisphere: operating manual
+# web360: operating manual
 
-omnisphere is a library of functions to read, analyse, stitch, stabilize and process 360 video in
+web360 is a library of functions to read, analyse, stitch, stabilize and process 360 video in
 the browser. It is not a player. This file is the operating manual for anyone (human or agent)
 changing the code.
+
+It reads Insta360 (`.insv`) and GoPro (`.360`) recordings today. DJI (`.osv`) is planned but not
+started: its layout is not yet described by a fixture, so it is reported as unsupported until it
+is (rule 5).
 
 ## How to start any task
 
@@ -36,21 +40,28 @@ changing the code.
    `docs/FORMAT-<vendor>.md`, stated plainly as facts about the file, and a fixture covers it.
    A body without both is reported as unsupported, never guessed.
 6. **Formats are described as facts.** A format doc says what the bytes mean ("record 3 holds gyro
-   samples: ..."), with units, byte order and the camera bodies it was verified on.
-7. **Strict lint, zero warnings.** Complexity 8, nesting 3, 30 lines a function, 300 lines a
+   samples: ..."), with units, byte order and the camera bodies it was verified on. Byte order is
+   stated per record and differs by vendor (Insta360 is little-endian, GoPro's GPMF is
+   big-endian); never assume one order across readers.
+7. **Vendor formats are derived independently.** A format doc states facts we verified against our
+   own fixtures, and a reader is written from those facts and from published methods, not copied
+   from another project. A fact a fixture cannot yet confirm is marked provisional until one does.
+   A public format reference may be pointed to for a maintainer; our own tooling and workflow are
+   never part of the docs.
+8. **Strict lint, zero warnings.** Complexity 8, nesting 3, 30 lines a function, 300 lines a
    file, 3 parameters, no magic numbers. Fix the design rather than disable a rule.
-8. **Units are types.** Use the branded units in `shared/units`; convert explicitly.
-9. **Document contracts with TSDoc.** Exported types and functions that other modules rely on get
-   a docstring: a one-line summary, then why, when, and the invariants. Do not restate the type.
-10. **Comments and docs describe the present.** No "previously", "used to", "no longer". History
+9. **Units are types.** Use the branded units in `shared/units`; convert explicitly.
+10. **Document contracts with TSDoc.** Exported types and functions that other modules rely on get
+    a docstring: a one-line summary, then why, when, and the invariants. Do not restate the type.
+11. **Comments and docs describe the present.** No "previously", "used to", "no longer". History
     belongs in git and the changelog.
-11. **No em or en dashes** anywhere: code, comments, docs, commit messages. The repository
+12. **No em or en dashes** anywhere: code, comments, docs, commit messages. The repository
     checks reject them.
-12. **Private samples never leak.** Nothing from `samples/` or its catalogue terms reaches a
+13. **Private samples never leak.** Nothing from `samples/` or its catalogue terms reaches a
     commit; the pre-commit and commit-msg hooks enforce it.
-13. **Pin everything.** Exact dependency versions, a committed lockfile, CI actions pinned to a
+14. **Pin everything.** Exact dependency versions, a committed lockfile, CI actions pinned to a
     commit.
-14. **Keep `CHANGELOG.md` current** for every user-visible change.
+15. **Keep `CHANGELOG.md` current** for every user-visible change.
 
 ## Commands
 

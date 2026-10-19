@@ -1,8 +1,8 @@
 {
-  "name": "@omnisphere/core",
+  "name": "@web360/core",
   "version": "0.0.0",
   "private": true,
-  "description": "omnisphere's vendor-neutral model of a 360 recording and the pure functions over it. No runtime dependencies.",
+  "description": "web360's vendor-neutral model of a 360 recording and the pure functions over it. No runtime dependencies.",
   "license": "MIT",
   "type": "module",
   "sideEffects": false,

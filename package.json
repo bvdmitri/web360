@@ -1,5 +1,5 @@
 {
-  "name": "omnisphere-workspace",
+  "name": "web360-workspace",
   "version": "0.0.0",
   "private": true,
   "description": "Functions to read, analyse, stitch, stabilize and process 360 video in the browser",
@@ -20,7 +20,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:mutation": "pnpm --filter @omnisphere/core test:mutation",
+    "test:mutation": "pnpm --filter @web360/core test:mutation",
     "checks": "node tools/checks/src/main.ts --all",
     "verify": "pnpm checks && pnpm typecheck && pnpm lint && pnpm format:check && pnpm depcruise && pnpm test:coverage"
   },

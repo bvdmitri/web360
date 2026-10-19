@@ -1,5 +1,5 @@
 {
-  "name": "@omnisphere/checks",
+  "name": "@web360/checks",
   "version": "0.0.0",
   "private": true,
   "description": "Repository checks run before every commit: private samples and foreign identifiers stay out of the history.",

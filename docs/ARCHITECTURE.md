@@ -1,6 +1,6 @@
 # Architecture
 
-omnisphere is a hexagonal TypeScript monorepo. The core is pure: it knows no browser API, no
+web360 is a hexagonal TypeScript monorepo. The core is pure: it knows no browser API, no
 Node API and no npm package. Everything that touches I/O, the GPU or a codec is an adapter that
 implements a port the core defines. `.dependency-cruiser.cjs` enforces every rule below.
 
@@ -10,7 +10,7 @@ implements a port the core defines. `.dependency-cruiser.cjs` enforces every rul
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | `packages/core`       | The vendor-neutral model of a recording and the pure functions over it. No runtime dependencies.                                             |
 | `packages/adapters/*` | One adapter per outside concern: byte sources (`fetch`, `blob`, `node`), demuxing, decoding, WebGL rendering. Each depends on the core only. |
-| `packages/omnisphere` | The published package: the public API, wiring the core to the adapters.                                                                      |
+| `packages/web360`     | The published package: the public API, wiring the core to the adapters.                                                                      |
 | `tools/*`             | Development tools: repository checks, fixture builders, inspection and measurement.                                                          |
 | `examples/*`          | Unpublished examples built on the public API, such as a minimal player.                                                                      |
 
