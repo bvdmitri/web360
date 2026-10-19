@@ -70,11 +70,13 @@ a consumer needs presentation time rather than media-clock time.
 
 ## Current state and next step
 
-The container reader (`format/mp4`) is complete: `readMovie` turns a `moov` into a movie of tracks
-with each sample placed and timed on its media clock, refusing fragmented files. The next task
-starts the vendor side: cut a couple of short, face-free fixtures from real recordings, then read
-the Insta360 trailer (the info, gyro, exposure and calibration records) and pair a recording's
-files, building toward the vendor-neutral model.
+The container reader (`format/mp4`) is complete, and the vendor side has begun. There is a
+de-identified Insta360 ONE R fixture (`test/fixtures/insta360/oner-split-00.insv`), the container
+reader is confirmed on it, and `format/insta360` locates the trailer and lists its records
+(contiguous or indexed). The next task parses those records: the info protobuf (model,
+calibration, timing fields), the gyro and exposure records, and the calibration strings, plus
+`RecordingFileName` pairing of a split recording's two files, building toward the vendor-neutral
+model and `open()`.
 
 To resume: `pnpm install`, then `pnpm verify` should be green. Read [CLAUDE.md](./CLAUDE.md), then
 the document in [docs/](./docs) for the area about to change.
