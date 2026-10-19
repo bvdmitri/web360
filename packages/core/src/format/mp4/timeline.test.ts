@@ -85,6 +85,30 @@ describe('mp4 timeline', () => {
     expect(samples.map((s) => s.offset)).toEqual([0, 100, 200, 210]);
   });
 
+  it('ignores a time run that claims more samples than the track has', () => {
+    const samples = buildSamples(
+      tablesOf({
+        chunkOffsets: [0],
+        sampleToChunk: [{ firstChunk: 1, samplesPerChunk: 2, descriptionIndex: 1 }],
+        sizes: { count: 2, uniformSize: 1, sizes: [] },
+        times: [{ count: 1_000_000, delta: 10 }],
+      }),
+    );
+    expect(samples).toHaveLength(2);
+  });
+
+  it('ignores a chunk that claims more samples than the track has', () => {
+    const samples = buildSamples(
+      tablesOf({
+        chunkOffsets: [0],
+        sampleToChunk: [{ firstChunk: 1, samplesPerChunk: 1_000_000, descriptionIndex: 1 }],
+        sizes: { count: 3, uniformSize: 1, sizes: [] },
+        times: [{ count: 3, delta: 1 }],
+      }),
+    );
+    expect(samples).toHaveLength(3);
+  });
+
   it('accumulates decode time as the running sum of the durations', () => {
     const duration = fc.integer({ min: 1, max: 1000 });
     fc.assert(

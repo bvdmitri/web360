@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { ByteReader } from '../../shared/binary/byteReader';
 import { MalformedBoxError, readBox } from './box';
 import {
+  MAX_SAMPLES,
   readChunkOffsets32,
   readChunkOffsets64,
   readCompositionOffsets,
@@ -93,6 +94,11 @@ describe('mp4 sample table', () => {
   it('refuses a table whose entry count overflows its box', () => {
     const [r, b] = table('stco', [...u32be(5)]);
     expect(() => readChunkOffsets32(r, b)).toThrow(MalformedBoxError);
+  });
+
+  it('refuses a sample count beyond what it will read', () => {
+    const [r, b] = table('stsz', [...u32be(1), ...u32be(MAX_SAMPLES + 1)]);
+    expect(() => readSampleSizes(r, b)).toThrow(MalformedBoxError);
   });
 
   it('recovers any list of time-to-sample runs', () => {
