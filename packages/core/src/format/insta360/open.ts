@@ -1,4 +1,5 @@
-import type { CameraRecording, LensImage } from '../../model/recording';
+import type { LensImage } from '../../model/recording';
+import type { EncodedFrame, EncodedVideo, OpenedRecording } from '../../model/video';
 import type { RandomAccessSource } from '../../ports/source';
 import { ByteReader } from '../../shared/binary/byteReader';
 import { microseconds, seconds, type Microseconds, type Seconds } from '../../shared/units/units';
@@ -20,44 +21,9 @@ export interface Insta360Files {
   readonly secondary?: RandomAccessSource;
 }
 
-/** One encoded video frame: where its bytes are in its file and when it shows. */
-export interface EncodedFrame {
-  readonly offset: number;
-  readonly size: number;
-  readonly timestamp: Microseconds;
-  readonly duration: Microseconds;
-  readonly isSync: boolean;
-}
-
-/**
- * One file's video, ready for a decoder: its source, codec, configuration and frames.
- *
- * @remarks `codec` and `decoderConfig` are what a WebCodecs `VideoDecoder` is configured with (the
- * codec string and its description). `frames` come in decode order, timed on the file's media
- * clock from its first frame; the edit list is not applied.
- */
-export interface EncodedVideo {
-  readonly source: RandomAccessSource;
-  readonly codec: string;
-  readonly decoderConfig: Uint8Array;
-  readonly width: number;
-  readonly height: number;
-  readonly frames: readonly EncodedFrame[];
-}
-
-/**
- * An opened Insta360 recording: its model, the calibration canvas, its videos and where each lens's
- * image is in them.
- *
- * @remarks `images` follows `recording.lenses`: lens `i` is read from video `images[i].texture`.
- * `duration` is the primary video's.
- */
-export interface Insta360Recording {
-  readonly recording: CameraRecording;
-  readonly canvas: readonly [number, number];
-  readonly videos: readonly EncodedVideo[];
-  readonly images: readonly LensImage[];
-  readonly duration: Seconds;
+/** An opened Insta360 recording and the source each of its videos is read from. */
+export interface Insta360Opened extends OpenedRecording {
+  readonly sources: readonly RandomAccessSource[];
 }
 
 /** One file of a recording that splits its lenses across two files, opened without the other. */
@@ -74,23 +40,23 @@ export class MissingLensFileError extends Error {
  * canvas (its frames cover that share, scaled); it needs `secondary`, and throws {@link MissingLensFileError} without it. Otherwise one video covers
  * the whole canvas for both lenses. Throws `NotInsta360Error` for a file with no Insta360 trailer.
  */
-export async function openInsta360(files: Insta360Files): Promise<Insta360Recording> {
+export async function openInsta360(files: Insta360Files): Promise<Insta360Opened> {
   const tail = await readTail(files.primary);
   const recording = readInsta360Recording(tail);
   const canvas = canvasOf(tail);
   const primary = await videoOf(files.primary);
   const isSplitRecording = isSplit(primary, { canvas, lenses: recording.lenses.length });
-  if (isSplitRecording && files.secondary === undefined) {
+  const secondary = isSplitRecording ? files.secondary : undefined;
+  if (isSplitRecording && secondary === undefined) {
     throw new MissingLensFileError('this recording splits its lenses across two files');
   }
-  const videos =
-    isSplitRecording && files.secondary !== undefined
-      ? [primary, await videoOf(files.secondary)]
-      : [primary];
+  const sources = secondary === undefined ? [files.primary] : [files.primary, secondary];
+  const videos = secondary === undefined ? [primary] : [primary, await videoOf(secondary)];
   return {
     recording,
     canvas,
     videos,
+    sources,
     images: recording.lenses.map((...[, index]) =>
       imageOf({ canvas, isSplit: isSplitRecording, index }),
     ),
@@ -127,7 +93,7 @@ async function videoOf(source: RandomAccessSource): Promise<EncodedVideo> {
   if (track === undefined || entry === undefined) {
     throw new UnsupportedContainerError('the file has no video track');
   }
-  return { source, ...entry, frames: framesOf(track) };
+  return { ...entry, frames: framesOf(track) };
 }
 
 function framesOf(track: Track): EncodedFrame[] {

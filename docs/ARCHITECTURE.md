@@ -18,13 +18,14 @@ Packages are added when they first hold code.
 
 ## Inside the core
 
-| Folder                            | Holds                                                                             | May import                      |
-| --------------------------------- | --------------------------------------------------------------------------------- | ------------------------------- |
-| `shared/`                         | Units, bytes, maths, errors                                                       | nothing outside `shared/`       |
-| `format/<vendor>/`                | Reading one vendor's files into the common model                                  | `shared/`, the model, the ports |
-| `model/`                          | `CameraRecording` and its parts: tracks, optics, motion, timing                   | `shared/`                       |
-| `motion/`, `optics/`, `analysis/` | Pure computations on the model                                                    | `shared/`, `model/`             |
-| `ports/`                          | Interfaces the adapters implement (`RandomAccessSource`, frame sources and sinks) | `shared/`, `model/`             |
+| Folder                                       | Holds                                                                                | May import                                           |
+| -------------------------------------------- | ------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| `shared/`                                    | Units, bytes, maths, errors                                                          | nothing outside `shared/`                            |
+| `format/<vendor>/`                           | Reading one vendor's files into the common model                                     | `shared/`, the model, the ports                      |
+| `model/`                                     | `CameraRecording` and its parts: tracks, optics, motion, timing                      | `shared/`                                            |
+| `motion/`, `optics/`, `stitch/`, `analysis/` | Pure computations on the model                                                       | `shared/`, `model/`, one another                     |
+| `ports/`                                     | Interfaces the adapters implement (`RandomAccessSource`, frame sources and sinks)    | `shared/`, `model/`                                  |
+| `rendition/`                                 | Planning a rendition: the frames of a span, the stabilized view, each frame's stitch | `shared/`, `model/`, `motion/`, `optics/`, `stitch/` |
 
 Only `format/` reads bytes. Vendor readers never import each other: each produces the same model,
 and everything downstream works on that model without knowing the vendor.

@@ -220,4 +220,59 @@ describe('the WebGPU stitcher', () => {
     expect(difference.largest).toBeLessThanOrEqual(4);
     expect(difference.mean).toBeLessThan(0.6);
   });
+
+  it('reads both lenses from one texture when they share it', async () => {
+    const shared = upload(texels(0));
+    const target = device().createTexture({
+      size: OUTPUT,
+      format: 'rgba8unorm',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+    });
+    const frame: StitchFrame = {
+      ...baseFrame,
+      lenses: baseFrame.lenses.map((one) => ({ ...one, image: { ...one.image, texture: 0 } })),
+    };
+    const stitcher = createStitcher(device(), 'rgba8unorm');
+    stitcher.render({ packed: packStitch(frame), textures: [shared] }, target);
+    const bytes = await readBack(target);
+    stitcher.destroy();
+    shared.destroy();
+    target.destroy();
+    expect(bytes.some((value, index) => index % 4 !== 3 && value > 0)).toBe(true);
+  });
+
+  it('refuses a frame without a lens image', () => {
+    const stitcher = createStitcher(device(), 'rgba8unorm');
+    const target = device().createTexture({
+      size: OUTPUT,
+      format: 'rgba8unorm',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+    expect(() => {
+      stitcher.render({ packed: packStitch(baseFrame), textures: [] }, target);
+    }).toThrow(/lens image/);
+    stitcher.destroy();
+    target.destroy();
+  });
+
+  it('renders frame after frame, growing its buffer when a frame needs more', async () => {
+    const textures = [upload(texels(0)), upload(texels(1))];
+    const target = device().createTexture({
+      size: OUTPUT,
+      format: 'rgba8unorm',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+    });
+    const stitcher = createStitcher(device(), 'rgba8unorm');
+    const withShutter: StitchFrame = {
+      ...baseFrame,
+      shutter: { sample: shutter, rows: SIZE, steps: 33 },
+    };
+    stitcher.render({ packed: packStitch(baseFrame), textures }, target);
+    stitcher.render({ packed: packStitch(baseFrame), textures }, target);
+    stitcher.render({ packed: packStitch(withShutter), textures }, target);
+    const difference = compare(await readBack(target), reference(withShutter));
+    stitcher.destroy();
+    for (const texture of [...textures, target]) texture.destroy();
+    expect(difference.largest).toBeLessThanOrEqual(4);
+  });
 });
