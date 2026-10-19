@@ -60,10 +60,18 @@ for the layering.
 The MP4 edit list (a track's presentation shift) is a later refinement of `format/mp4`, added when
 a consumer needs presentation time rather than media-clock time.
 
+### Motion (underway)
+
+- `shared/math/quaternion` is the rotation primitive, and `motion/integrateOrientation` turns a
+  recording's angular-velocity stream into a unit-quaternion attitude per sample (ADR 0004),
+  proven on the real ONE R gyro track. Still to come: the stabilization modes (lock-to-world,
+  horizon leveling from the acceleration stream, smoothed heading), and a slerp to sample attitude
+  at a frame's time.
+
 ### Later
 
-- Motion (orientation, stabilization modes), optics (camera models), stitching behind a GPU port,
-  and analysis (stabilization quality, motion, seams).
+- Optics (camera models, including the deferred GoPro EAC), stitching behind a GPU port, and
+  analysis (stabilization quality, motion, seams).
 - Adapters (`packages/adapters/*`: byte sources, demuxing, decoding, WebGL) and the published
   package (`packages/web360`).
 
