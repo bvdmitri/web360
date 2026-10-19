@@ -18,6 +18,8 @@ describe('ByteReader', () => {
 
   it('reads signed integers and floats', () => {
     expect(reader(0xff, 0xff, 0xff, 0xff).i32le(0)).toBe(-1);
+    expect(reader(0xff, 0xff, 0xff, 0xff).i32be(0)).toBe(-1);
+    expect(reader(0x80, 0x00, 0x00, 0x00).i32be(0)).toBe(-2_147_483_648);
     expect(reader(0xff, 0x80).i16be(0)).toBe(-128);
     expect(reader(0x80, 0x00).i16be(0)).toBe(-32_768);
     const f = new DataView(new ArrayBuffer(12));
@@ -90,6 +92,7 @@ describe('ByteReader', () => {
         expect(r.i32le(offset)).toBe(view.getInt32(offset, true));
         expect(r.u64leBig(offset)).toBe(view.getBigUint64(offset, true));
         expect(r.u64beBig(offset)).toBe(view.getBigUint64(offset, false));
+        expect(r.i32be(offset)).toBe(view.getInt32(offset, false));
         expect(Object.is(r.f64le(offset), view.getFloat64(offset, true))).toBe(true);
       }),
     );

@@ -35,3 +35,21 @@ track; a `trak` contains `tkhd` and `mdia`). Children are walked over the parent
 The reader walks a half-open byte range and keeps every offset absolute within the file. Offsets
 stay absolute because a chunk offset read from a sample table later states its position against
 the start of the file, not against the box it sits in, so no translation is needed.
+
+## Sample tables
+
+A track's sample table (`stbl`, inside `trak/mdia/minf`) says where each sample sits and how long
+it lasts. Each table is a full box: a one-byte version and three flag bytes precede its fields,
+then a 32-bit entry count, then the entries. All values are big-endian.
+
+| Box    | Each entry                                               | Holds                                                                                |
+| ------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `stts` | sample count, delta                                      | a run of samples that share a duration, in the media timescale                       |
+| `ctts` | sample count, offset                                     | a run that shifts composition time from decode time; offset is signed                |
+| `stss` | sample number                                            | the one-based samples that begin a group of pictures; absent means every sample does |
+| `stsz` | a shared size, else one size per sample                  | the byte size of each sample                                                         |
+| `stsc` | first chunk, samples per chunk, sample description index | a run of chunks laid out alike                                                       |
+| `stco` | chunk offset (32-bit)                                    | the absolute file offset of each chunk                                               |
+| `co64` | chunk offset (64-bit)                                    | the absolute file offset of each chunk, past 4 GiB                                   |
+
+A table that lists more entries than its box can hold is refused.

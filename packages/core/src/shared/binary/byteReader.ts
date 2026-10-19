@@ -84,6 +84,10 @@ export class ByteReader {
     return this.view.getInt32(this.checked(offset, U32), true);
   }
 
+  public i32be(offset: number): number {
+    return this.view.getInt32(this.checked(offset, U32), false);
+  }
+
   /** An unsigned 64-bit little-endian value; throws a `RangeError` above 2^53 - 1. */
   public u64le(offset: number): number {
     return this.exactU64(this.u64leBig(offset), offset);

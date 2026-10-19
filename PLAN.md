@@ -68,9 +68,10 @@ In order:
 
 ## Current state and next step
 
-The container box layer is the furthest-built part of a reader. The immediate next task is the MP4
-sample table (step 1 above): the sample-table entry parsers first (time, size, chunk, sync and
-composition offsets), then the movie and track structure, then timing.
+The container reader (`format/mp4`) walks the box tree and reads the sample-table boxes (`stts`,
+`ctts`, `stss`, `stsz`, `stsc`, `stco` and `co64`). The next task finishes the container: the
+movie header, the track structure (id, media and movie timescales, handler, the sample entry and
+its codec) and the edit list, then timing to the sample, refusing fragmented files.
 
 To resume: `pnpm install`, then `pnpm verify` should be green. Read [CLAUDE.md](./CLAUDE.md), then
 the document in [docs/](./docs) for the area about to change.
