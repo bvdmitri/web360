@@ -74,9 +74,11 @@ The container reader (`format/mp4`) is complete, and the vendor side is underway
 de-identified Insta360 ONE R fixture (`test/fixtures/insta360/oner-split-00.insv`). `format/insta360`
 locates the trailer, lists its records (contiguous or indexed), and reads the info record (a small
 built-in protobuf scanner gives the model, frame size, frame rate, first-frame timestamp, rolling
-shutter, gyro offset and ranges, and the raw calibration string). The next task reads the gyro and
-exposure records and parses the calibration string into lens poses, then `RecordingFileName`
-pairing of a split recording's two files, building toward the vendor-neutral model and `open()`.
+shutter, gyro offset and ranges, and the raw calibration string), the gyro record (raw-layout IMU
+samples in g and rad/s), and the exposure record (per-frame timestamp and exposure time). The next
+task parses the calibration string into per-lens poses (v1 first, which the ONE R writes), then
+`RecordingFileName` pairing of a split recording's two files, building toward the vendor-neutral
+model and `open()`.
 
 To resume: `pnpm install`, then `pnpm verify` should be green. Read [CLAUDE.md](./CLAUDE.md), then
 the document in [docs/](./docs) for the area about to change.
