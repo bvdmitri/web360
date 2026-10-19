@@ -56,6 +56,12 @@ describe('seam correlation', () => {
     }
   });
 
+  it('does not reward losing part of the band from coverage', () => {
+    const full = seamCorrelation(truthPair, samplers, band);
+    const narrowed = truthPair.map((optics) => ({ ...optics, coverage: degrees(182) }));
+    expect(seamCorrelation(narrowed, samplers, band)).toBeLessThan(0.75 * full);
+  });
+
   it('is zero when there is nothing to correlate', () => {
     expect(seamCorrelation([lens(60, 0)], [constant([0.5, 0.5, 0.5])], band)).toBe(0);
     const flat = [constant([0.5, 0.5, 0.5]), constant([0.2, 0.2, 0.2])];

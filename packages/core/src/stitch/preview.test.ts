@@ -13,6 +13,7 @@ import { ByteReader } from '../shared/binary/byteReader';
 import { identity } from '../shared/math/quaternion';
 import type { LensOptics } from '../model/recording';
 import { degrees } from '../shared/units/units';
+import { refineCalibration } from './calibrate';
 import { estimateGains } from './gains';
 import { seamCorrelation } from './seam';
 import { devignette, estimateVignetting, type Vignetting } from './vignetting';
@@ -163,6 +164,17 @@ const tintedIfAsked = (samplers: readonly LensSampler[]): readonly LensSampler[]
     ? samplers
     : samplers.map((sampler, index) => tint(sampler, tints[index] ?? [1, 1, 1]));
 
+const refinedIfAsked = (
+  lenses: readonly LensOptics[],
+  samplers: readonly LensSampler[],
+  file: string,
+): readonly LensOptics[] => {
+  if (process.env['WEB360_PREVIEW_REFINE'] === undefined) return lenses;
+  const refined = refineCalibration(lenses, samplers, SEAM_BAND);
+  writeFileSync(file, JSON.stringify(refined, undefined, 2));
+  return refined.lenses;
+};
+
 const writeSweep = (
   lenses: readonly LensOptics[],
   samplers: readonly LensSampler[],
@@ -233,7 +245,11 @@ describe('stitch preview (developer harness)', () => {
       if (process.env['WEB360_PREVIEW_SWEEP'] !== undefined) {
         writeSweep(recording.lenses, chosen, `${outPng}.sweep.json`);
       }
-      const lenses = withFieldOfViewOverride(recording.lenses);
+      const lenses = refinedIfAsked(
+        withFieldOfViewOverride(recording.lenses),
+        chosen,
+        `${outPng}.refined.json`,
+      );
       const vignetting = vignettingFor(lenses, chosen);
       const flat = devignette(lenses, chosen, vignetting);
       const tinted = tintedIfAsked(flat);
