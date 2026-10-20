@@ -38,3 +38,5 @@ export { viewOf } from './rendition/motion';
 export type { Stabilization, ViewOptions } from './rendition/motion';
 export { frameAt } from './rendition/frame';
 export type { RenditionContext } from './rendition/frame';
+export { estimateSeamColour, seamPosition, seamShift, SEAM_BINS } from './stitch/seamColour';
+export type { SeamColour } from './stitch/seamColour';

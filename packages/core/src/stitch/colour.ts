@@ -2,11 +2,13 @@ import type { LensImage, LensOptics } from '../model/recording';
 import { estimateGains } from './gains';
 import type { Grid } from './overlap';
 import type { LensSampler, Rgb } from './render';
+import { estimateSeamColour, type SeamColour } from './seamColour';
 import { devignette } from './vignetting';
 
 const CHANNELS = 4;
 const BYTE = 255;
 const BLACK: Rgb = [0, 0, 0];
+const UNITY: Rgb = [1, 1, 1];
 const GRID: Grid = { width: 256, height: 128 };
 
 /** A decoded lens picture as RGBA bytes, row-major, at any size (usually a small copy of a frame). */
@@ -23,9 +25,13 @@ export interface ColourInput {
   readonly pictures: readonly LensPicture[];
 }
 
-/** What the stitch applies to the lens colours on top of each lens's own falloff: its gain. */
+/**
+ * What the stitch applies to the lens colours on top of each lens's own falloff: its gain, and the
+ * colour field that meets the lenses around the seam.
+ */
 export interface ColourCorrection {
   readonly gains: readonly Rgb[];
+  readonly seam: SeamColour;
 }
 
 /**
@@ -52,7 +58,8 @@ export function imageSampler(picture: LensPicture, image: LensImage): LensSample
  * Estimates the colour corrections of one frame from a picture of each video.
  *
  * @remarks Each lens is flattened by its own measured falloff (ADR 0017), then its gain is matched
- * across the overlap on the flattened lenses (ADR 0008), as the reference stitch applies them. `pictures`
+ * across the overlap on the flattened lenses (ADR 0008), and what difference is left is measured
+ * around the seam (ADR 0018), as the reference stitch applies them. `pictures`
  * follows the videos (`LensImage.texture`), so the lenses of a single-video camera share one.
  */
 export function estimateColour(input: ColourInput): ColourCorrection {
@@ -64,5 +71,13 @@ export function estimateColour(input: ColourInput): ColourCorrection {
       : imageSampler(picture, image);
   });
   const flattened = devignette(input.lenses, samplers);
-  return { gains: estimateGains(input.lenses, flattened, GRID) };
+  const gains = estimateGains(input.lenses, flattened, GRID);
+  const matched = flattened.map((sampler, lens): LensSampler => {
+    const gain = gains[lens] ?? UNITY;
+    return (pixel) => {
+      const [r, g, b] = sampler(pixel);
+      return [r * gain[0], g * gain[1], b * gain[2]];
+    };
+  });
+  return { gains, seam: estimateSeamColour(input.lenses, matched) };
 }

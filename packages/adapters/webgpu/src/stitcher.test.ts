@@ -170,6 +170,7 @@ const reference = (frame: StitchFrame): Rgb[] => {
     height: frame.height,
     ...(frame.gains !== undefined && { gains: frame.gains }),
     ...(frame.shutter !== undefined && { shutter: frame.shutter.sample }),
+    ...(frame.seam !== undefined && { seam: frame.seam }),
   });
 };
 
@@ -214,6 +215,21 @@ describe('the WebGPU stitcher', () => {
     };
     const difference = compare(await stitchOnGpu(frame), reference(frame));
     expect(difference.largest).toBeLessThanOrEqual(3);
+  });
+
+  it('shifts the lenses toward each other around the seam as the reference does', async () => {
+    const seam = {
+      width: 0.6,
+      offsets: Array.from({ length: 32 }, (...[, bin]): Rgb => [
+        0.2 * Math.sin(bin / 3),
+        -0.1,
+        0.15 * Math.cos(bin / 5),
+      ]),
+    };
+    const frame: StitchFrame = { ...baseFrame, seam };
+    const difference = compare(await stitchOnGpu(frame), reference(frame));
+    expect(difference.largest).toBeLessThanOrEqual(3);
+    expect(difference.mean).toBeLessThan(0.6);
   });
 
   it('corrects rolling shutter from the tabulated turn', async () => {

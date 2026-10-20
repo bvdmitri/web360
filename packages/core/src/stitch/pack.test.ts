@@ -156,4 +156,18 @@ describe('stitch packing', () => {
     expect(reproduced[0]).toBeCloseTo(expected[0], 1);
     expect(reproduced[1]).toBeCloseTo(expected[1], 1);
   });
+
+  it('carries the seam colour field after the shutter table', () => {
+    const seam = { width: 0.5, offsets: [[0.1, 0.2, 0.3] as const, [-0.1, 0, 0.1] as const] };
+    const packed = packStitch(frame({ seam, shutter: { sample: shutter, rows: 3000, steps: 3 } }));
+    expect(slot(packed, 2)).toEqual([2, 0.5, 0, 0].map((value) => Math.fround(value)));
+    const table = STITCH_LAYOUT.header + 2 * STITCH_LAYOUT.lensSlots + 2 * 3;
+    expect(slot(packed, table + 1)).toEqual([-0.1, 0, 0.1, 0].map((value) => Math.fround(value)));
+    expect(packed).toHaveLength((table + 2) * 4);
+  });
+
+  it('marks no seam field when there is none', () => {
+    const packed = packStitch(frame());
+    expect(slot(packed, 2)).toEqual([0, 0, 0, 0]);
+  });
 });

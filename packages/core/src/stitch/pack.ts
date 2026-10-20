@@ -4,6 +4,7 @@ import { conjugate, type Quaternion } from '../shared/math/quaternion';
 import { degreesToRadians } from '../shared/units/units';
 import type { Rgb } from './render';
 import type { Shutter } from './sample';
+import type { SeamColour } from './seamColour';
 
 const SLOT = 4;
 const UNITY: Rgb = [1, 1, 1];
@@ -36,6 +37,7 @@ export interface StitchFrame {
   readonly height: number;
   readonly gains?: readonly Rgb[];
   readonly shutter?: ShutterTable;
+  readonly seam?: SeamColour;
 }
 
 /**
@@ -43,13 +45,15 @@ export interface StitchFrame {
  * table.
  *
  * @remarks Header slot 0 is the correction quaternion; slot 1 is the output width and height, the
- * lens count and the shutter steps (0 for none). Each lens then has, in order: the inverse lens
+ * lens count and the shutter steps (0 for none); slot 2 is the seam colour field's direction count
+ * (0 for none) and width in radians. Each lens then has, in order: the inverse lens
  * pose; centre x and y, focal length and radius; half field of view, half coverage, texture index
  * and shutter rows; the image origin and extent; the red, green and blue gain and the vignetting
  * strength; and the vignetting start squared. After the lenses come `steps` turn quaternions per
- * lens, lens by lens. Quaternions are stored `x, y, z, w`.
+ * lens, lens by lens, and then the seam colour field's offsets, one slot each (red, green, blue).
+ * Quaternions are stored `x, y, z, w`.
  */
-export const STITCH_LAYOUT = { header: 2, lensSlots: 6 } as const;
+export const STITCH_LAYOUT = { header: 3, lensSlots: 6 } as const;
 
 /**
  * Packs one frame of the stitch into the floats a GPU renderer reads, laid out as
@@ -66,16 +70,23 @@ export const STITCH_LAYOUT = { header: 2, lensSlots: 6 } as const;
 export function packStitch(frame: StitchFrame): Float32Array<ArrayBuffer> {
   const steps = frame.shutter?.steps ?? 0;
   const lensCount = frame.lenses.length;
-  const slots = STITCH_LAYOUT.header + lensCount * (STITCH_LAYOUT.lensSlots + steps);
+  const seam = frame.seam?.offsets ?? [];
+  const slots = STITCH_LAYOUT.header + lensCount * (STITCH_LAYOUT.lensSlots + steps) + seam.length;
   const packed = new Float32Array(slots * SLOT);
   packed.set(quaternionSlot(frame.correction), 0);
   packed.set([frame.width, frame.height, lensCount, steps], SLOT);
+  packed.set([seam.length, frame.seam?.width ?? 0], 2 * SLOT);
   for (const [index, lens] of frame.lenses.entries()) {
     const at = (STITCH_LAYOUT.header + index * STITCH_LAYOUT.lensSlots) * SLOT;
     packed.set(lensSlots({ frame, lens, index }), at);
   }
   const table = (STITCH_LAYOUT.header + lensCount * STITCH_LAYOUT.lensSlots) * SLOT;
-  packed.set(shutterSlots(frame), table);
+  const shutters = shutterSlots(frame);
+  packed.set(shutters, table);
+  packed.set(
+    seam.flatMap((offset) => [...offset, 0]),
+    table + shutters.length,
+  );
   return packed;
 }
 

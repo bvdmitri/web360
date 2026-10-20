@@ -4,6 +4,7 @@ import { outputToCamera } from '../motion/view';
 import type { OpenedRecording } from '../model/video';
 import type { StitchFrame } from '../stitch/pack';
 import type { Rgb } from '../stitch/render';
+import type { SeamColour } from '../stitch/seamColour';
 import { rollingShutter } from '../stitch/rollingShutter';
 import type { Microseconds } from '../shared/units/units';
 
@@ -21,6 +22,7 @@ export interface RenditionContext {
   readonly width: number;
   readonly shutterSteps: number;
   readonly gains?: readonly Rgb[];
+  readonly seam?: SeamColour;
 }
 
 /**
@@ -54,5 +56,6 @@ export function frameAt(context: RenditionContext, time: Microseconds): StitchFr
     height: 2 * Math.round(context.width / HALVES),
     shutter: { sample: shutter, rows: canvas[1], steps: context.shutterSteps },
     ...(context.gains !== undefined && { gains: context.gains }),
+    ...(context.seam !== undefined && { seam: context.seam }),
   };
 }

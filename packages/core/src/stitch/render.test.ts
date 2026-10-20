@@ -49,6 +49,18 @@ describe('equirectangular render', () => {
     expectRgbClose(equator!, [0.5, 0, 0.5]);
   });
 
+  it('shifts each lens toward the other across the seam colour field', () => {
+    const difference: Rgb = [-1, 0, 1]; // blue minus red
+    const seam = { width: 1, offsets: Array.from({ length: 32 }, () => difference) };
+    // 36 degrees above the equator: only the up lens sees it, 0.63 rad from the seam.
+    const [, offSeam] = renderEquirectangular(scene({ width: 1, height: 5, seam }));
+    const fromSeam = Math.PI / 2 - (54 * Math.PI) / 180;
+    const fade = Math.cos((Math.PI / 2) * fromSeam) ** 2;
+    expectRgbClose(offSeam!, [1 - fade / 2, 0, fade / 2]);
+    const [beyond] = renderEquirectangular(scene({ width: 1, height: 5, seam }));
+    expectRgbClose(beyond!, [1, 0, 0]);
+  });
+
   it('is black where no lens covers the direction', () => {
     const narrow: LensOptics = { ...lens(0), fieldOfView: degrees(60), coverage: degrees(60) };
     const [equator] = renderEquirectangular(

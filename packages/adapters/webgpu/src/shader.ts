@@ -5,15 +5,15 @@
  * @remarks It applies the reference stitch (`renderEquirectangular` in the core) to the numbers
  * `packStitch` lays out, slot for slot: the output direction rotated by the correction, each lens
  * projected by the equidistant model (and again through the tabulated rolling-shutter turn of the
- * row it lands on), the overlap weighted by each lens's margin, and each lens's colour devignetted
- * and scaled by its gain. The angle from the optical axis is taken as `atan2` of the sine and cosine
+ * row it lands on), the overlap weighted by each lens's margin, and each lens's colour devignetted,
+ * scaled by its gain and shifted by the seam colour field. The angle from the optical axis is taken as `atan2` of the sine and cosine
  * rather than `acos`, which keeps single precision accurate near the lens centre. Lens images come
  * from up to two textures, sampled linearly with canvas pixels at texel centres; outside its image a
  * lens reads black, as in the reference.
  */
 export const STITCH_SHADER = /* wgsl */ `
 const PI = 3.141592653589793;
-const HEADER = 2u;
+const HEADER = 3u;
 const LENS_SLOTS = 6u;
 
 @group(0) @binding(0) var<storage, read> stitch: array<vec4f>;
@@ -98,6 +98,32 @@ fn corrected(lens: u32, pixel: vec2f) -> vec3f {
   return readImage(lens, pixel) * exp(colour.w * beyond) * colour.rgb;
 }
 
+fn seamShift(lens: u32, direction: vec3f) -> vec3f {
+  let bins = u32(stitch[2].x);
+  let lensCount = u32(stitch[1].z);
+  let width = stitch[2].y;
+  if (bins == 0u || lensCount != 2u || lens > 1u) {
+    return vec3f(0.0);
+  }
+  let offset = (land(0u, direction).angle - land(1u, direction).angle) / 2.0;
+  if (abs(offset) >= width) {
+    return vec3f(0.0);
+  }
+  let inFirst = rotate(lensSlot(0u, 0u), direction);
+  let count = f32(bins);
+  let unwrapped = ((atan2(inFirst.y, inFirst.x) + PI) / (2.0 * PI)) * count - 0.5;
+  let position = unwrapped - floor(unwrapped / count) * count;
+  let lower = u32(floor(position)) % bins;
+  let table = HEADER + lensCount * LENS_SLOTS + lensCount * u32(stitch[1].w);
+  let difference = mix(
+    stitch[table + lower].rgb,
+    stitch[table + (lower + 1u) % bins].rgb,
+    position - floor(position),
+  );
+  let fade = pow(cos(PI / 2.0 * offset / width), 2.0);
+  return difference * select(-0.5, 0.5, lens == 0u) * fade;
+}
+
 fn outputDirection(position: vec2f) -> vec3f {
   let size = stitch[1].xy;
   let longitude = PI - (position.x / size.x) * 2.0 * PI;
@@ -118,7 +144,7 @@ fn fragmentMain(@builtin(position) position: vec4f) -> @location(0) vec4f {
     if (margin < 0.0) {
       continue;
     }
-    let sampled = corrected(lens, landing.pixel);
+    let sampled = corrected(lens, landing.pixel) + seamShift(lens, direction);
     colour += margin * sampled;
     total += margin;
     seen += 1.0;
@@ -140,7 +166,7 @@ fn evenSplit(direction: vec3f, lensCount: u32) -> vec3f {
     if (lensSlot(lens, 2u).y - landing.angle < 0.0) {
       continue;
     }
-    colour += corrected(lens, landing.pixel);
+    colour += corrected(lens, landing.pixel) + seamShift(lens, direction);
     seen += 1.0;
   }
   return colour / seen;

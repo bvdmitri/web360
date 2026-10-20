@@ -39,6 +39,7 @@ import { overlapPairs, type OverlapPair } from './overlap';
 import { renderEquirectangular, type LensSampler, type Rgb } from './render';
 import type { Shutter } from './sample';
 import { seamCorrelation } from './seam';
+import { estimateSeamColour, type SeamColour } from './seamColour';
 import { devignette, estimateVignetting } from './vignetting';
 
 // A developer harness, not a CI test, skipped unless WEB360_PREVIEW_INSV points at the `_00_` half
@@ -95,6 +96,7 @@ interface Motion {
 
 interface Corrections {
   readonly gains: Rgb[] | undefined;
+  readonly seam: SeamColour | undefined;
 }
 
 interface Frame {
@@ -226,8 +228,15 @@ const correctionsFor = (
   samplers: readonly LensSampler[],
 ): Corrections => {
   const flat = devignette(lenses, samplers);
+  const gains = setting('GAIN') === '0' ? undefined : estimateGains(lenses, flat, GAIN_GRID);
+  const matched = flat.map((sampler, lens): LensSampler => (pixel) => {
+    const gain = gains?.[lens] ?? [1, 1, 1];
+    const [r, g, b] = sampler(pixel);
+    return [r * gain[0], g * gain[1], b * gain[2]];
+  });
   return {
-    gains: setting('GAIN') === '0' ? undefined : estimateGains(lenses, flat, GAIN_GRID),
+    gains,
+    seam: setting('SEAM') === '0' ? undefined : estimateSeamColour(lenses, matched),
   };
 };
 
@@ -244,6 +253,7 @@ const renderWith = (
     width: frame.width,
     height: frame.height,
     ...(corrections.gains !== undefined && { gains: corrections.gains }),
+    ...(corrections.seam !== undefined && { seam: corrections.seam }),
     ...(frame.shutter !== undefined && { shutter: frame.shutter }),
   });
 };

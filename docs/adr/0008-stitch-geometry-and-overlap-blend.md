@@ -1,6 +1,6 @@
 # ADR 0008: Stitch geometry and overlap blend
 
-Status: accepted; its per-frame vignetting is superseded by ADR 0017, (2026-10-19), the blend provisional until evaluated on real footage
+Status: accepted (2026-10-19), the blend provisional until evaluated on real footage; its per-frame vignetting is superseded by ADR 0017
 
 ## Context
 
