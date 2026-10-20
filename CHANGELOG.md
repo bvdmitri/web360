@@ -6,6 +6,21 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-20
+
+### Changed
+
+- Stabilization is steadier: the attitude follows the gyro exactly and takes the vertical from the
+  accelerometer averaged over seconds, instead of chasing it frame by frame (about ten times less
+  added motion in freefall).
+- The ONE R's rim falloff is measured once from footage instead of estimated per frame, which removes
+  the bright arc that showed along the seam in the sky.
+
+### Added
+
+- A colour field around the seam meets the two lenses where one of them sees glare from the sun,
+  re-measured as the video goes and eased in like the exposure gains.
+
 ## [0.1.0] - 2026-10-19
 
 ### Added
