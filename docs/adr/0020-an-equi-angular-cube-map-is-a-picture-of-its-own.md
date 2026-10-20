@@ -24,6 +24,9 @@ camera's own seam is stored twice.
   and frames measured on MAX2 frames by matching face edges.
 - **`stitch/cubeRender.ts`** renders a cube map to an equirectangular frame on the CPU, the
   reference a GPU pass is checked against, as the lens stitch has its own.
+- **`stitch/packCube.ts`** packs a cube-map frame into four-float slots (`CUBE_LAYOUT`), and the
+  WebGPU adapter's `createCubeRenderer` draws it, checked against `renderCubeMap` on Dawn. It
+  shares its full-screen pass (`pass.ts`) with the stitcher.
 - A recording opened by a vendor reader will say which picture it is, lenses or a cube map; the
   lens stitch is unchanged.
 
