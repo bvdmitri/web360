@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-20
+
+### Added
+
+- GoPro MAX2 and MAX recordings (`.360`): `openRendition` opens one, its later chapters passed as
+  `following` and joined into one recording, and renders its in-camera cube map on the GPU.
+- A GoPro is stabilized by the attitude the camera records, levelled by its own gravity reading;
+  its alignment and telemetry delay are measured on MAX2 footage.
+
 ## [0.3.0] - 2026-10-20
 
 ### Fixed
