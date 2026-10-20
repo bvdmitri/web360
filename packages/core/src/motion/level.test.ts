@@ -10,7 +10,7 @@ import {
   type Vector3,
 } from '../shared/math/quaternion';
 import { microseconds } from '../shared/units/units';
-import { levelOrientation } from './level';
+import { levelAttitude, levelOrientation } from './level';
 import type { OrientationSample } from './orientation';
 
 const STEP = 5000; // 200 Hz
@@ -127,5 +127,22 @@ describe('levelling the orientation', () => {
       samples([0, 1e15], () => [GRAVITY, 0, 0]),
     );
     expect(levelled.map((sample) => sample.orientation.w)).toEqual([1, 1, 1]);
+  });
+
+  it('levels a given attitude by up readings trusted whatever their size', () => {
+    const at = times(20);
+    const tilt = fromRotationVector([0.4, 0, 0]);
+    const bodyUp = rotate(conjugate(tilt), UP);
+    // A camera that reports its own attitude (here, none: identity) and a unit gravity per frame.
+    const attitude = at.map((time) => ({
+      timestamp: microseconds(time),
+      orientation: fromRotationVector([0, 0, 0]),
+    }));
+    const levelled = levelAttitude(
+      attitude,
+      samples(at, () => scale(bodyUp, 0.5)),
+      { trust: 'every-reading' },
+    );
+    expect(tiltAgainst(levelled[0]!.orientation, bodyUp)).toBeLessThan(0.01);
   });
 });

@@ -82,6 +82,25 @@ export interface MotionSample {
   readonly value: readonly [number, number, number];
 }
 
+/** A timed orientation: the rotation that takes the body's frame to the world's at that instant. */
+export interface AttitudeSample {
+  readonly timestamp: Microseconds;
+  readonly orientation: Quaternion;
+}
+
+/**
+ * An attitude the camera reports itself, already fused, with the up direction it measured in its
+ * body frame, both on the capture clock.
+ *
+ * @remarks A GoPro writes its own orientation (`CORI`) and gravity (`GRAV`) per frame. They are in
+ * the camera's orientation frame, which `imuToCamera` turns into the picture's, like the IMU axes.
+ * The orientation is relative to the recording's start, not to gravity: the up readings level it.
+ */
+export interface ReportedAttitude {
+  readonly attitude: readonly AttitudeSample[];
+  readonly up: readonly MotionSample[];
+}
+
 /** One frame's capture time and exposure duration. */
 export interface FrameExposure {
   readonly timestamp: Microseconds;
@@ -101,6 +120,8 @@ export interface FrameExposure {
  * its sensor's own rate, in the IMU's axes. `imuToCamera` turns those axes into the frame the lens
  * poses are stated in; without it the attitude integrated from the motion cannot steer the stitch.
  * A video frame shown at time `t` into the video was captured at `captureClock + t`.
+ * `reportedAttitude` is the camera's own fused attitude when it writes one (see
+ * {@link ReportedAttitude}); a renderer prefers it to integrating the motion.
  */
 export interface CameraRecording {
   readonly model: string;
@@ -113,4 +134,5 @@ export interface CameraRecording {
   readonly exposures: readonly FrameExposure[];
   readonly rollingShutter: Seconds;
   readonly captureClock: Microseconds;
+  readonly reportedAttitude?: ReportedAttitude;
 }

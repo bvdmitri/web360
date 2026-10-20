@@ -1,8 +1,15 @@
 import type { Microseconds, Seconds } from '../shared/units/units';
+import type { CubeMap } from './cube';
 import type { CameraRecording, LensImage } from './recording';
 
-/** One encoded video frame: where its bytes are in its file and when it shows. */
+/**
+ * One encoded video frame: where its bytes are in its file and when it shows.
+ *
+ * @remarks `source` names the file it is in, as an index into the opener's sources, when a video
+ * runs across several files (a GoPro's chapters); without it the frame is in its video's own file.
+ */
 export interface EncodedFrame {
+  readonly source?: number;
   readonly offset: number;
   readonly size: number;
   readonly timestamp: Microseconds;
@@ -40,4 +47,5 @@ export interface OpenedRecording {
   readonly videos: readonly EncodedVideo[];
   readonly images: readonly LensImage[];
   readonly duration: Seconds;
+  readonly cube?: CubeMap;
 }

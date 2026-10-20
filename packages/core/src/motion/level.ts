@@ -25,9 +25,14 @@ const MAX_BINS = 864_000;
 const BINS_PER_SAMPLE = 10;
 const UP: Vector3 = [0, 0, 1];
 
-/** How slowly the vertical is allowed to move: the Gaussian width it is averaged over. */
+/**
+ * How slowly the vertical is allowed to move (the Gaussian width it is averaged over), and which up
+ * readings count: an accelerometer's only near one g (`near-one-g`, the default), or every reading
+ * alike (`every-reading`, for a camera that reports its own gravity estimate as a unit vector).
+ */
 export interface LevelOptions {
   readonly window?: Seconds;
+  readonly trust?: 'near-one-g' | 'every-reading';
 }
 
 /**
@@ -50,21 +55,38 @@ export function levelOrientation(
   acceleration: readonly MotionSample[],
   options: LevelOptions = {},
 ): OrientationSample[] {
-  const integrated = integrateOrientation(angularVelocity);
-  const first = integrated[0];
-  const last = integrated.at(-1);
-  if (first === undefined || last === undefined || acceleration.length === 0) return integrated;
+  return levelAttitude(integrateOrientation(angularVelocity), acceleration, options);
+}
+
+/**
+ * Levels an attitude by up readings averaged over seconds, keeping its frame-to-frame motion.
+ *
+ * @remarks The levelling of {@link levelOrientation}, for an attitude that comes from elsewhere: a
+ * camera's own fused orientation (a GoPro's `CORI`) with its own gravity readings, given as the up
+ * direction in the body's frame. Each reading is turned into the attitude's frame, weighted by
+ * `trust`, averaged over `window` both ways in time, and the attitude is turned by the smallest tilt
+ * that takes that average to the world's up.
+ */
+export function levelAttitude(
+  attitude: readonly OrientationSample[],
+  up: readonly MotionSample[],
+  options: LevelOptions = {},
+): OrientationSample[] {
+  const first = attitude[0];
+  const last = attitude.at(-1);
+  if (first === undefined || last === undefined || up.length === 0) return [...attitude];
   const count = Math.floor((last.timestamp - first.timestamp) / BIN) + 1;
-  if (count > Math.min(MAX_BINS, BINS_PER_SAMPLE * (integrated.length + acceleration.length))) {
-    return integrated;
+  if (count > Math.min(MAX_BINS, BINS_PER_SAMPLE * (attitude.length + up.length))) {
+    return [...attitude];
   }
-  const bins = upBins(integrated, acceleration, { start: first.timestamp, count });
+  const weight = options.trust === 'every-reading' ? everyReading : nearOneG;
+  const bins = upBins(attitude, up, { start: first.timestamp, count, weight });
   const smoothed = smooth(bins, ((options.window ?? DEFAULT_WINDOW) * MICROS_PER_SECOND) / BIN);
-  const tilts = smoothed.map((up, index) => ({
+  const tilts = smoothed.map((average, index) => ({
     timestamp: (first.timestamp + (index + 1 / 2) * BIN) as Microseconds,
-    orientation: tiltToLevel(up),
+    orientation: tiltToLevel(average),
   }));
-  return integrated.map((sample) => ({
+  return attitude.map((sample) => ({
     timestamp: sample.timestamp,
     orientation: multiply(
       rotationAt(tilts, sample.timestamp, (tilt) => tilt.orientation),
@@ -76,7 +98,11 @@ export function levelOrientation(
 function upBins(
   integrated: readonly OrientationSample[],
   acceleration: readonly MotionSample[],
-  span: { readonly start: number; readonly count: number },
+  span: {
+    readonly start: number;
+    readonly count: number;
+    readonly weight: (magnitude: number) => number;
+  },
 ): Vector3[] {
   const bins: [number, number, number][] = Array.from({ length: span.count }, () => [0, 0, 0]);
   for (const sample of acceleration) {
@@ -85,7 +111,7 @@ function upBins(
     if (bin === undefined || magnitude === 0) continue;
     const attitude = rotationAt(integrated, sample.timestamp, (one) => one.orientation);
     const up = rotate(attitude, sample.value);
-    const weight = trust(magnitude) / magnitude;
+    const weight = span.weight(magnitude) / magnitude;
     bin[0] += up[0] * weight;
     bin[1] += up[1] * weight;
     bin[2] += up[2] * weight;
@@ -93,7 +119,11 @@ function upBins(
   return bins;
 }
 
-function trust(magnitude: number): number {
+function everyReading(): number {
+  return 1;
+}
+
+function nearOneG(magnitude: number): number {
   const deviation = (magnitude - STANDARD_GRAVITY) / (TRUST * STANDARD_GRAVITY);
   return Math.exp(-deviation * deviation);
 }

@@ -1,10 +1,11 @@
 import type { LensImage } from '../../model/recording';
-import type { EncodedFrame, EncodedVideo, OpenedRecording } from '../../model/video';
+import type { EncodedVideo, OpenedRecording } from '../../model/video';
 import type { RandomAccessSource } from '../../ports/source';
 import { ByteReader } from '../../shared/binary/byteReader';
-import { microseconds, seconds, type Microseconds, type Seconds } from '../../shared/units/units';
+import { seconds, type Seconds } from '../../shared/units/units';
 import { readMovieFrom } from '../mp4/locate';
-import { samplesOf, UnsupportedContainerError, type Track } from '../mp4/movie';
+import { encodedVideosOf } from '../mp4/frames';
+import { UnsupportedContainerError } from '../mp4/movie';
 import { readCalibration } from './calibration';
 import { readInfo } from './info';
 import { readInsta360Recording } from './recording';
@@ -12,7 +13,6 @@ import { readTrailer, TRAILER_FOOTER_SIZE, trailerLength } from './trailer';
 
 const INFO = 1;
 const MICROS_PER_SECOND = 1_000_000;
-const VIDEO_HANDLER = 'vide';
 const ASPECT_TOLERANCE = 0.01;
 
 /** The files of one Insta360 recording: the one with the trailer, and a split recording's other lens. */
@@ -113,24 +113,7 @@ function canvasOf(tail: ByteReader): readonly [number, number] {
 
 async function videosOf(source: RandomAccessSource): Promise<EncodedVideo[]> {
   const movie = await readMovieFrom(source);
-  return movie.tracks.flatMap((track) =>
-    track.handler === VIDEO_HANDLER && track.sampleEntry !== undefined
-      ? [{ ...track.sampleEntry, frames: framesOf(track) }]
-      : [],
-  );
-}
-
-function framesOf(track: Track): EncodedFrame[] {
-  // Whole microseconds, as a decoder's chunk and frame timestamps are.
-  const toMicros = (time: number): Microseconds =>
-    microseconds(Math.round((time * MICROS_PER_SECOND) / track.timescale));
-  return samplesOf(track).map((sample) => ({
-    offset: sample.offset,
-    size: sample.size,
-    timestamp: toMicros(sample.compositionTime),
-    duration: toMicros(sample.duration),
-    isSync: sample.isSync,
-  }));
+  return encodedVideosOf(movie.tracks);
 }
 
 function imageOf(lens: {

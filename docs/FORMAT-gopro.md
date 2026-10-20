@@ -74,8 +74,11 @@ duration on the track's media clock.
 - `CORI`, `IORI`: signed 16-bit quaternions over `SCAL` 32767, one per frame. `CORI` is the camera's
   orientation since the recording began, `IORI` the turn the camera applied to the image relative
   to its body. On the MAX2 `IORI` is a small turn about a single axis (a few degrees). The stored
-  order is read as `w, x, y, z`; how the components map to the cube is settled by measurement.
-- `GRAV`: the gravity direction, a signed 16-bit unit vector over `SCAL` 32767, one per frame.
+  order is `w, x, y, z`. Measured on the MAX2 (ADR 0021): `CORI` is the world's turn to the body,
+  in a frame of x right, y down, z forward; the cube's frame is that frame turned by
+  `{ w: 0.5, x: -0.5, y: 0.5, z: -0.5 }`; and the telemetry clock runs 30 ms behind the picture.
+- `GRAV`: the gravity direction, a signed 16-bit unit vector over `SCAL` 32767, one per frame, in
+  the same body frame as `CORI` (measured on the MAX2). Negated, it is up.
 - Also present and not used: `WBAL`, `WRGB`, `ISOE`, `UNIF`, `PRJT`, `MNOR`, `OCNF`, `WNDM`, `MWET`,
   `AALP`, `MSKP`, `LSKP`, `CSCT`, `CSCB`, `LRVO`, `LRVS`, `TMPC`. **`GPS9` / `GPSA` / `LVGP`
   (location) and `FACE` (detected face boxes) are personal data**: a fixture zeroes them.
