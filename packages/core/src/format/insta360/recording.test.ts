@@ -43,6 +43,7 @@ describe('insta360 recording', () => {
     expect(recording.lenses).toHaveLength(2);
     expect(recording.lenses[0]?.projection).toBe('equidistant');
     expect(recording.lenses[0]?.radius).toBeCloseTo(1476.98, 2);
+    expect(recording.lenses[1]?.vignetting).toEqual({ strength: 4.78, start: 0.998 });
     expect(recording.angularVelocity).toHaveLength(145_232);
     expect(recording.acceleration).toHaveLength(145_232);
     expect(recording.angularVelocity[0]?.timestamp).toBe(recording.acceleration[0]?.timestamp);

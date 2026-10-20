@@ -164,8 +164,7 @@ const reference = (frame: StitchFrame): Rgb[] => {
   const samplers = frame.lenses.map((one, index) => bilinear(texels(index), one.image));
   return renderEquirectangular({
     lenses,
-    samplers:
-      frame.vignetting === undefined ? samplers : devignette(lenses, samplers, frame.vignetting),
+    samplers: devignette(lenses, samplers),
     correction: frame.correction,
     width: frame.width,
     height: frame.height,
@@ -206,7 +205,13 @@ describe('the WebGPU stitcher', () => {
   });
 
   it('undoes the vignetting the way the reference does', async () => {
-    const frame: StitchFrame = { ...baseFrame, vignetting: { strength: 0.4, start: 0.6 } };
+    const frame: StitchFrame = {
+      ...baseFrame,
+      lenses: baseFrame.lenses.map((one) => ({
+        ...one,
+        optics: { ...one.optics, vignetting: { strength: 0.4, start: 0.6 } },
+      })),
+    };
     const difference = compare(await stitchOnGpu(frame), reference(frame));
     expect(difference.largest).toBeLessThanOrEqual(3);
   });

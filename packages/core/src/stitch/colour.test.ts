@@ -49,10 +49,22 @@ describe('colour corrections from lens pictures', () => {
     expect(brighter![0] * 200).toBeCloseTo(darker![0] * 100, 0);
   });
 
-  it('finds no falloff in lenses that record none', () => {
+  it('leaves lenses that record alike as they are', () => {
     const colour = estimateColour({ lenses, images, pictures: [flat(32, 150), flat(32, 150)] });
-    expect(colour.vignetting.strength).toBeCloseTo(0, 6);
     expect(colour.gains[0]![1]).toBeCloseTo(1, 6);
+  });
+
+  it('matches the lenses after flattening each by its own falloff', () => {
+    const falloff = { strength: 3, start: 0.9 };
+    const darkened = [lenses[0]!, { ...lenses[1]!, vignetting: falloff }];
+    const colour = estimateColour({
+      lenses: darkened,
+      images,
+      pictures: [flat(32, 150), flat(32, 150)],
+    });
+    // Flattened, the second lens reads brighter in the overlap, so it is turned down to meet.
+    expect(colour.gains[1]![0]).toBeLessThan(1);
+    expect(colour.gains[0]![0]).toBeGreaterThan(1);
   });
 
   it('reads a lens without a picture as black, which leaves its gain alone', () => {

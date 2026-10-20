@@ -112,16 +112,21 @@ describe('stitch packing', () => {
     expect(lensSlot(packed, 0, 5)).toEqual([0, 0, 0, 0]);
   });
 
-  it('carries each lens gain and the shared vignetting', () => {
+  it('carries each lens gain and its own vignetting', () => {
+    const second = lens(180, 2);
     const packed = packStitch(
       frame({
+        lenses: [
+          lens(0, 0),
+          { ...second, optics: { ...second.optics, vignetting: { strength: 0.5, start: 0.5 } } },
+        ],
         gains: [
           [1.25, 1.5, 0.75],
           [0.5, 1, 2],
         ],
-        vignetting: { strength: 0.5, start: 0.5 },
       }),
     );
+    expect(lensSlot(packed, 0, 5)).toEqual([0, 0, 0, 0]);
     expect(lensSlot(packed, 1, 4)).toEqual([0.5, 1, 2, 0.5]);
     expect(lensSlot(packed, 1, 5)).toEqual([0.25, 0, 0, 0]);
   });

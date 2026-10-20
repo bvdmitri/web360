@@ -16,7 +16,7 @@ export { renderEquirectangular } from './stitch/render';
 export type { LensSampler, Rgb, Scene } from './stitch/render';
 export type { Shutter } from './stitch/sample';
 export { devignette } from './stitch/vignetting';
-export type { Vignetting } from './stitch/vignetting';
+export type { Vignetting } from './model/recording';
 export { packStitch, STITCH_LAYOUT } from './stitch/pack';
 export type { ShutterTable, StitchFrame, StitchLens } from './stitch/pack';
 export { memorySource } from './ports/source';

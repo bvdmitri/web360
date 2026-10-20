@@ -2,7 +2,7 @@ import type { LensImage, LensOptics } from '../model/recording';
 import { estimateGains } from './gains';
 import type { Grid } from './overlap';
 import type { LensSampler, Rgb } from './render';
-import { devignette, estimateVignetting, type Vignetting } from './vignetting';
+import { devignette } from './vignetting';
 
 const CHANNELS = 4;
 const BYTE = 255;
@@ -23,9 +23,8 @@ export interface ColourInput {
   readonly pictures: readonly LensPicture[];
 }
 
-/** What the stitch applies to the lens colours: the rim falloff to undo and each lens's gain. */
+/** What the stitch applies to the lens colours on top of each lens's own falloff: its gain. */
 export interface ColourCorrection {
-  readonly vignetting: Vignetting;
   readonly gains: readonly Rgb[];
 }
 
@@ -52,8 +51,8 @@ export function imageSampler(picture: LensPicture, image: LensImage): LensSample
 /**
  * Estimates the colour corrections of one frame from a picture of each video.
  *
- * @remarks The rim falloff is measured first (ADR 0008) and undone, then each lens's gain is matched
- * across the overlap on the flattened lenses, as the reference stitch applies them. `pictures`
+ * @remarks Each lens is flattened by its own measured falloff (ADR 0017), then its gain is matched
+ * across the overlap on the flattened lenses (ADR 0008), as the reference stitch applies them. `pictures`
  * follows the videos (`LensImage.texture`), so the lenses of a single-video camera share one.
  */
 export function estimateColour(input: ColourInput): ColourCorrection {
@@ -64,7 +63,6 @@ export function estimateColour(input: ColourInput): ColourCorrection {
       ? (): Rgb => BLACK
       : imageSampler(picture, image);
   });
-  const vignetting = estimateVignetting(input.lenses, samplers, GRID);
-  const flattened = devignette(input.lenses, samplers, vignetting);
-  return { vignetting, gains: estimateGains(input.lenses, flattened, GRID) };
+  const flattened = devignette(input.lenses, samplers);
+  return { gains: estimateGains(input.lenses, flattened, GRID) };
 }

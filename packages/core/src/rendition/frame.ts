@@ -5,7 +5,6 @@ import type { OpenedRecording } from '../model/video';
 import type { StitchFrame } from '../stitch/pack';
 import type { Rgb } from '../stitch/render';
 import { rollingShutter } from '../stitch/rollingShutter';
-import type { Vignetting } from '../stitch/vignetting';
 import type { Microseconds } from '../shared/units/units';
 
 const HALVES = 4;
@@ -22,7 +21,6 @@ export interface RenditionContext {
   readonly width: number;
   readonly shutterSteps: number;
   readonly gains?: readonly Rgb[];
-  readonly vignetting?: Vignetting;
 }
 
 /**
@@ -56,6 +54,5 @@ export function frameAt(context: RenditionContext, time: Microseconds): StitchFr
     height: 2 * Math.round(context.width / HALVES),
     shutter: { sample: shutter, rows: canvas[1], steps: context.shutterSteps },
     ...(context.gains !== undefined && { gains: context.gains }),
-    ...(context.vignetting !== undefined && { vignetting: context.vignetting }),
   };
 }

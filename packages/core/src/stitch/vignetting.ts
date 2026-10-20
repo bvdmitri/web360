@@ -1,17 +1,10 @@
-import type { LensOptics } from '../model/recording';
+import type { LensOptics, Vignetting } from '../model/recording';
 import { overlapPairs, type Grid, type OverlapPair } from './overlap';
 import type { LensSampler, Rgb } from './render';
 
-const BLACK: Rgb = [0, 0, 0];
+export type { Vignetting } from '../model/recording';
 
-/**
- * A lens edge falloff: brightness drops by `exp(-strength * (reach^2 - start^2))` beyond `start`,
- * and not at all inside it.
- */
-export interface Vignetting {
-  readonly strength: number;
-  readonly start: number;
-}
+const BLACK: Rgb = [0, 0, 0];
 
 /**
  * Estimates how strongly the lenses darken toward their rims, from where two of them overlap.
@@ -24,7 +17,9 @@ export interface Vignetting {
  * says nothing about the falloff further in: the result starts at the innermost reach the overlap
  * covers, and {@link devignette} leaves everything inside that alone rather than extrapolating a
  * steep rim slope into the centre. The falloff is assumed the same for every lens. Without an
- * overlap, or where a lens records no light, the strength is 0.
+ * overlap, or where a lens records no light, the strength is 0. The overlap only constrains how the
+ * falloff differs across the seam, not its level there, so this is a diagnostic: the stitch uses
+ * each lens's measured `vignetting` (ADR 0017).
  */
 export function estimateVignetting(
   lenses: readonly LensOptics[],
@@ -36,20 +31,20 @@ export function estimateVignetting(
 }
 
 /**
- * Wraps each lens's sampler so it undoes the rim falloff {@link estimateVignetting} measured.
+ * Wraps each lens's sampler so it undoes the lens's own falloff toward its rim.
  *
  * @remarks The correction depends only on how far a pixel sits from its lens centre, so it is applied
  * to the lens image before anything else; exposure is then matched on the flattened lenses. A lens
- * without a sampler reads black.
+ * with no stated `vignetting` is read as recorded, and a lens without a sampler reads black.
  */
 export function devignette(
   lenses: readonly LensOptics[],
   samplers: readonly LensSampler[],
-  vignetting: Vignetting,
 ): LensSampler[] {
   return lenses.map((lens, index) => {
     const sampler = samplers[index];
-    return sampler === undefined ? (): Rgb => BLACK : flattened(lens, sampler, vignetting);
+    if (sampler === undefined) return (): Rgb => BLACK;
+    return lens.vignetting === undefined ? sampler : flattened(lens, sampler, lens.vignetting);
   });
 }
 

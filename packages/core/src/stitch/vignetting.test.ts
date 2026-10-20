@@ -36,6 +36,10 @@ const constant =
   () =>
     colour;
 
+// The lenses with a falloff of the true strength from `start`.
+const withFalloff = (lenses: readonly LensOptics[], start: number): LensOptics[] =>
+  lenses.map((one) => ({ ...one, vignetting: { strength: TRUE_STRENGTH, start } }));
+
 describe('vignetting', () => {
   it('recovers the falloff strength over the overlap, whatever each lens exposes', () => {
     const measured = estimateVignetting([front, back], [vignetted(0.6), vignetted(0.3)], grid);
@@ -50,10 +54,7 @@ describe('vignetting', () => {
   });
 
   it('flattens the whole lens when the falloff is applied from the centre', () => {
-    const [corrected] = devignette([front], [vignetted(0.6)], {
-      strength: TRUE_STRENGTH,
-      start: 0,
-    });
+    const [corrected] = devignette(withFalloff([front], 0), [vignetted(0.6)]);
     for (const pixel of [
       [1000, 1000],
       [1500, 1000],
@@ -64,10 +65,7 @@ describe('vignetting', () => {
   });
 
   it('leaves the interior alone and lifts only beyond where the falloff starts', () => {
-    const [corrected] = devignette([front], [constant([0.5, 0.5, 0.5])], {
-      strength: TRUE_STRENGTH,
-      start: 0.9,
-    });
+    const [corrected] = devignette(withFalloff([front], 0.9), [constant([0.5, 0.5, 0.5])]);
     expect(corrected?.([1500, 1000])[0]).toBe(0.5);
     const rim = corrected?.([2000, 1000])[0] ?? 0;
     expect(rim).toBeCloseTo(0.5 * Math.exp(TRUE_STRENGTH * (1 - 0.81)), 9);
@@ -91,11 +89,13 @@ describe('vignetting', () => {
     expect(estimateVignetting([front, back], dark, grid).strength).toBe(0);
   });
 
+  it('leaves a lens without a stated falloff as recorded', () => {
+    const [kept] = devignette([front], [constant([0.5, 0.5, 0.5])]);
+    expect(kept?.([2000, 1000])).toEqual([0.5, 0.5, 0.5]);
+  });
+
   it('is black for a lens without a sampler', () => {
-    const [, missing] = devignette([front, back], [vignetted(0.6)], {
-      strength: TRUE_STRENGTH,
-      start: 0,
-    });
+    const [, missing] = devignette(withFalloff([front, back], 0), [vignetted(0.6)]);
     expect(missing?.([1000, 1000])).toEqual([0, 0, 0]);
   });
 });

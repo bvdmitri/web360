@@ -1,4 +1,4 @@
-import type { CameraRecording, LensOptics } from '../../model/recording';
+import type { CameraRecording, LensOptics, Vignetting } from '../../model/recording';
 import type { ByteReader } from '../../shared/binary/byteReader';
 import { fromRotationVector } from '../../shared/math/quaternion';
 import { degrees, microseconds, seconds } from '../../shared/units/units';
@@ -22,6 +22,11 @@ const MS_PER_SECOND = 1000;
 const FIELD_OF_VIEW_DEGREES = 183;
 const COVERAGE_DEGREES = 188;
 const FIELD_OF_VIEW = degrees(FIELD_OF_VIEW_DEGREES);
+
+// The ONE R's falloff toward the rim of its image circle, measured on the owner's footage by
+// averaging a frame a second of each lens over a whole jump: flat to a reach of 0.998, then darker
+// by `exp(-4.78 * (reach^2 - 0.998^2))`, about 0.89 at 1.01 and 0.73 at 1.03 (ADR 0017).
+const VIGNETTING: Vignetting = { strength: 4.78, start: 0.998 };
 const COVERAGE = degrees(COVERAGE_DEGREES);
 
 // The ONE R's IMU axes sit a quarter turn about X from the lens calibration frame (IMU z along the
@@ -70,5 +75,6 @@ function toOptics(pose: LensPose): LensOptics {
     coverage: COVERAGE,
     center: pose.center,
     orientation: { yaw: pose.yaw, pitch: pose.pitch, roll: pose.roll },
+    vignetting: VIGNETTING,
   };
 }

@@ -74,7 +74,7 @@ describe('one frame of a rendition', () => {
     expect(Math.abs(last?.w ?? 1)).toBeLessThan(1);
   });
 
-  it('passes the colour corrections through', () => {
+  it('passes the gains through', () => {
     const corrected = frameAt(
       {
         opened,
@@ -86,12 +86,10 @@ describe('one frame of a rendition', () => {
           [1, 1, 1],
           [2, 2, 2],
         ],
-        vignetting: { strength: 0.5, start: 0.9 },
       },
       microseconds(0),
     );
     expect(corrected.gains?.[1]).toEqual([2, 2, 2]);
-    expect(corrected.vignetting).toEqual({ strength: 0.5, start: 0.9 });
   });
 
   it('has an even height for an odd width', () => {

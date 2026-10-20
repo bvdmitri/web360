@@ -35,10 +35,11 @@ import { degrees, seconds } from '../shared/units/units';
 import { refineCalibration } from './calibrate';
 import { rollingShutter } from './rollingShutter';
 import { estimateGains } from './gains';
+import { overlapPairs, type OverlapPair } from './overlap';
 import { renderEquirectangular, type LensSampler, type Rgb } from './render';
 import type { Shutter } from './sample';
 import { seamCorrelation } from './seam';
-import { devignette, estimateVignetting, type Vignetting } from './vignetting';
+import { devignette, estimateVignetting } from './vignetting';
 
 // A developer harness, not a CI test, skipped unless WEB360_PREVIEW_INSV points at the `_00_` half
 // of a real Insta360 split recording. It decodes lens frames with ffmpeg, CPU-stitches them, and
@@ -93,7 +94,6 @@ interface Motion {
 }
 
 interface Corrections {
-  readonly vignetting: Vignetting;
   readonly gains: Rgb[] | undefined;
 }
 
@@ -104,9 +104,23 @@ interface Frame {
   readonly shutter?: Shutter;
 }
 
+const evenlyLit = (optics: LensOptics): LensOptics => ({
+  projection: optics.projection,
+  radius: optics.radius,
+  fieldOfView: optics.fieldOfView,
+  coverage: optics.coverage,
+  center: optics.center,
+  orientation: optics.orientation,
+});
+
 const loadSource = (insv00: string, directory: string): Source => {
   const reader = ByteReader.of(readFileSync(insv00));
-  const recording = readInsta360Recording(reader);
+  const read = readInsta360Recording(reader);
+  // WEB360_PREVIEW_VIGNETTE=0 renders the lenses as recorded, without their measured falloff.
+  const recording =
+    setting('VIGNETTE') === '0'
+      ? { ...read, lenses: read.lenses.map((optics) => evenlyLit(optics)) }
+      : read;
   const infoRecord = readTrailer(reader).records.find((record) => record.id === 1);
   if (infoRecord === undefined) throw new Error('the recording has no info record');
   const canvas = readCalibration(readInfo(reader, infoRecord.region).calibration).canvas;
@@ -211,13 +225,8 @@ const correctionsFor = (
   lenses: readonly LensOptics[],
   samplers: readonly LensSampler[],
 ): Corrections => {
-  const vignetting =
-    setting('VIGNETTE') === '0'
-      ? { strength: 0, start: 1 }
-      : estimateVignetting(lenses, samplers, GAIN_GRID);
-  const flat = devignette(lenses, samplers, vignetting);
+  const flat = devignette(lenses, samplers);
   return {
-    vignetting,
     gains: setting('GAIN') === '0' ? undefined : estimateGains(lenses, flat, GAIN_GRID),
   };
 };
@@ -230,7 +239,7 @@ const renderWith = (
   const { corrections, frame } = context;
   return renderEquirectangular({
     lenses,
-    samplers: tinted(devignette(lenses, samplers, corrections.vignetting)),
+    samplers: tinted(devignette(lenses, samplers)),
     correction: frame.rotation,
     width: frame.width,
     height: frame.height,
@@ -526,11 +535,7 @@ const renderStill = (
   const lenses = lensesFor(source, samplers, context.out);
   if (setting('SWEEP') !== undefined) writeSweep(lenses, samplers, `${context.out}.sweep.json`);
   const corrections = correctionsFor(lenses, samplers);
-  const correlation = seamCorrelation(
-    lenses,
-    devignette(lenses, samplers, corrections.vignetting),
-    SEAM_BAND,
-  );
+  const correlation = seamCorrelation(lenses, devignette(lenses, samplers), SEAM_BAND);
   writeFileSync(`${context.out}.correction.json`, JSON.stringify({ ...corrections, correlation }));
   const shutter = shutterAt(source, motion, context.at);
   const frame = {
@@ -552,14 +557,121 @@ const writeSweep = (
   for (let fov = SWEEP.from; fov <= SWEEP.to; fov += 1) {
     const candidate = withFieldOfView(lenses, fov);
     const measured = estimateVignetting(candidate, samplers, GAIN_GRID);
-    const correlation = seamCorrelation(
-      candidate,
-      devignette(candidate, samplers, measured),
-      SEAM_BAND,
-    );
+    const correlation = seamCorrelation(candidate, devignette(candidate, samplers), SEAM_BAND);
     table.push({ fov, k: measured.strength, start: measured.start, correlation });
   }
   writeFileSync(file, JSON.stringify(table, undefined, 2));
+};
+
+// Vignetting estimated frame by frame across the recording, and pooled with an exposure intercept
+// per frame (each frame's log ratios and reach gaps centred on their own means).
+const scanVignetting = (source: Source, out: string): void => {
+  const step = Number(setting('VIGNETTE_STEP') ?? '5');
+  const span = Number(setting('VIGNETTE_TO') ?? '140');
+  const frames: { at: number; strength: number; start: number; pairs: number }[] = [];
+  const pooled = { xy: 0, xx: 0, innermost: 1 };
+  for (let at = Number(setting('VIGNETTE_FROM') ?? '5'); at <= span; at += step) {
+    const samplers = samplersAt(source, at, STILL.decode);
+    const pairs = overlapPairs(source.recording.lenses, samplers, GAIN_GRID);
+    const measured = estimateVignetting(source.recording.lenses, samplers, GAIN_GRID);
+    frames.push({ at, strength: measured.strength, start: measured.start, pairs: pairs.length });
+    poolPairs(pairs, pooled);
+  }
+  const pooledStrength = pooled.xx > 0 ? pooled.xy / pooled.xx : 0;
+  const result = { pooled: { strength: pooledStrength, start: pooled.innermost }, frames };
+  writeFileSync(`${out}.vignetting.json`, JSON.stringify(result, undefined, 2));
+};
+
+const poolPairs = (
+  pairs: readonly OverlapPair[],
+  pooled: { xy: number; xx: number; innermost: number },
+): void => {
+  if (pairs.length === 0) return;
+  let meanX = 0;
+  let meanY = 0;
+  for (const pair of pairs) {
+    meanX += pair.reachSquaredGap / pairs.length;
+    meanY += pair.logRatio / pairs.length;
+    pooled.innermost = Math.min(pooled.innermost, pair.innerReach);
+  }
+  for (const pair of pairs) {
+    pooled.xy += (pair.reachSquaredGap - meanX) * (pair.logRatio - meanY);
+    pooled.xx += (pair.reachSquaredGap - meanX) ** 2;
+  }
+};
+
+// Each lens's brightness against reach, from frames averaged over the whole recording: the scene
+// averages out as the camera turns, and the lens's falloff toward its rim remains.
+const FLAT_SIZE = 512;
+const FLAT_BINS = 105;
+const flatField = (source: Source, out: string): void => {
+  const profiles = [source.insv00, source.insv10].map((file, lens) => {
+    const frames = everySecond(file, FLAT_SIZE);
+    const optics = source.recording.lenses[lens];
+    if (optics === undefined) throw new Error(`no lens ${lens}`);
+    return radialProfile(frames, { optics, lens, canvas: source.canvas });
+  });
+  writeFileSync(`${out}.flatfield.json`, JSON.stringify(profiles, undefined, 2));
+};
+
+const everySecond = (file: string, size: number): Uint8Array[] => {
+  const raw = path.join(os.tmpdir(), `web360-flat-${process.pid}.rgb`);
+  const filter = `fps=1,scale=${size}:${size}`;
+  const input = ['-v', 'error', '-y', '-i', file, '-map', '0:v:0', '-vf', filter];
+  execFileSync('ffmpeg', [...input, '-f', 'rawvideo', '-pix_fmt', 'rgb24', raw]);
+  const all = readFileSync(raw);
+  rmSync(raw);
+  const frameBytes = size * size * 3;
+  const frames: Uint8Array[] = [];
+  for (let start = 0; start + frameBytes <= all.length; start += frameBytes) {
+    frames.push(all.subarray(start, start + frameBytes));
+  }
+  return frames;
+};
+
+const addPixel = (
+  frames: readonly Uint8Array[],
+  pixel: { at: number; bin: number; sums: Float64Array; counts: Float64Array },
+): void => {
+  const { at, bin } = pixel;
+  for (const frame of frames) {
+    pixel.sums[bin]! += ((frame[at] ?? 0) + (frame[at + 1] ?? 0) + (frame[at + 2] ?? 0)) / 3;
+    pixel.counts[bin]! += 1;
+  }
+};
+
+const radialProfile = (
+  frames: readonly Uint8Array[],
+  lens: { optics: LensOptics; lens: number; canvas: readonly [number, number] },
+): { reach: number; level: number; count: number }[] => {
+  const square = lens.canvas[0] / 2;
+  const scale = FLAT_SIZE / square;
+  const sums = new Float64Array(FLAT_BINS);
+  const counts = new Float64Array(FLAT_BINS);
+  for (let y = 0; y < FLAT_SIZE; y += 1) {
+    for (let x = 0; x < FLAT_SIZE; x += 1) {
+      const canvasX = x / scale + lens.lens * square;
+      const reach =
+        Math.hypot(canvasX - lens.optics.center[0], y / scale - lens.optics.center[1]) /
+        lens.optics.radius;
+      const bin = Math.floor(reach * 100);
+      if (bin < FLAT_BINS) addPixel(frames, { at: (y * FLAT_SIZE + x) * 3, bin, sums, counts });
+    }
+  }
+  return Array.from(sums, (sum, bin) => ({
+    reach: bin / 100,
+    level: counts[bin]! > 0 ? sum / counts[bin]! : 0,
+    count: counts[bin]!,
+  }));
+};
+
+const runMeasurements = (source: Source, context: { at: number; out: string }): void => {
+  const { at, out } = context;
+  if (setting('MOTION_SCAN') !== undefined) scanMotion(source, out);
+  if (setting('IMU_SEARCH') !== undefined) searchImu(source, at, out);
+  if (setting('SHUTTER_SEARCH') !== undefined) searchShutter(source, at, out);
+  if (setting('VIGNETTE_SCAN') !== undefined) scanVignetting(source, out);
+  if (setting('FLAT_FIELD') !== undefined) flatField(source, out);
 };
 
 describe('stitch preview (developer harness)', () => {
@@ -570,9 +682,7 @@ describe('stitch preview (developer harness)', () => {
       mkdirSync(path.dirname(out), { recursive: true });
       const source = loadSource(footage!, path.dirname(out));
       const at = Number(setting('AT') ?? '0');
-      if (setting('MOTION_SCAN') !== undefined) scanMotion(source, out);
-      if (setting('IMU_SEARCH') !== undefined) searchImu(source, at, out);
-      if (setting('SHUTTER_SEARCH') !== undefined) searchShutter(source, at, out);
+      runMeasurements(source, { at, out });
       const motion = motionFor(source.recording);
       const clip = setting('CLIP');
       const target = clip === undefined ? out : out.replace(/\.png$/u, '.mp4');

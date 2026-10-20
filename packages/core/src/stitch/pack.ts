@@ -1,10 +1,9 @@
-import type { LensImage, LensOptics } from '../model/recording';
+import type { LensImage, LensOptics, Vignetting } from '../model/recording';
 import { lensPose } from '../optics/lens';
 import { conjugate, type Quaternion } from '../shared/math/quaternion';
 import { degreesToRadians } from '../shared/units/units';
 import type { Rgb } from './render';
 import type { Shutter } from './sample';
-import type { Vignetting } from './vignetting';
 
 const SLOT = 4;
 const UNITY: Rgb = [1, 1, 1];
@@ -36,7 +35,6 @@ export interface StitchFrame {
   readonly width: number;
   readonly height: number;
   readonly gains?: readonly Rgb[];
-  readonly vignetting?: Vignetting;
   readonly shutter?: ShutterTable;
 }
 
@@ -62,7 +60,8 @@ export const STITCH_LAYOUT = { header: 2, lensSlots: 6 } as const;
  * the core. Angles are in radians and the focal length is the equidistant `radius / (fieldOfView /
  * 2)`, so the shader projects a direction as the optics do. The shutter is sampled at each lens's
  * centre column, which suits a sensor read row by row; between tabulated rows a renderer
- * interpolates. A lens without a gain is left as recorded and no vignetting means none.
+ * interpolates. A lens without a gain is left as recorded, and its vignetting is its optics' own
+ * (none when it states none).
  */
 export function packStitch(frame: StitchFrame): Float32Array<ArrayBuffer> {
   const steps = frame.shutter?.steps ?? 0;
@@ -99,13 +98,16 @@ function lensSlots(entry: {
     entry.frame.shutter?.rows ?? 0,
     ...image.origin,
     ...image.extent,
-    ...colourSlots(entry.frame, entry.index),
+    ...colourSlots(entry.frame, { index: entry.index, vignetting: optics.vignetting ?? NONE }),
   ];
 }
 
-function colourSlots(frame: StitchFrame, index: number): number[] {
-  const gain = frame.gains?.[index] ?? UNITY;
-  const vignetting = frame.vignetting ?? NONE;
+function colourSlots(
+  frame: StitchFrame,
+  lens: { readonly index: number; readonly vignetting: Vignetting },
+): number[] {
+  const gain = frame.gains?.[lens.index] ?? UNITY;
+  const { vignetting } = lens;
   return [...gain, vignetting.strength, vignetting.start * vignetting.start, 0, 0, 0];
 }
 
