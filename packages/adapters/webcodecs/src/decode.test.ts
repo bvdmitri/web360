@@ -124,7 +124,7 @@ describe('decoding a lens video', () => {
     const decoder = fake();
     await collect(
       decodeVideo({
-        source,
+        sources: [source],
         video,
         range: { start: 0, end: 9 },
         wanted: [],
@@ -143,7 +143,7 @@ describe('decoding a lens video', () => {
     const decoder = fake();
     const times = await collect(
       decodeVideo({
-        source,
+        sources: [source],
         video,
         range: { start: 4, end: 8 },
         wanted: [5000, 6000, 7000],
@@ -162,7 +162,7 @@ describe('decoding a lens video', () => {
     const decoder = fake();
     await collect(
       decodeVideo({
-        source,
+        sources: [source],
         video,
         range: { start: 0, end: 9 },
         wanted: ORDER.map((slot) => slot * PERIOD),
@@ -178,7 +178,7 @@ describe('decoding a lens video', () => {
     await expect(
       collect(
         decodeVideo({
-          source,
+          sources: [source],
           video,
           range: { start: 0, end: 9 },
           wanted: [9000],
@@ -193,7 +193,7 @@ describe('decoding a lens video', () => {
     const decoder = fake();
     const controller = new AbortController();
     const frames = decodeVideo({
-      source,
+      sources: [source],
       video,
       range: { start: 0, end: 9 },
       wanted: ORDER.map((slot) => slot * PERIOD),
@@ -211,7 +211,7 @@ describe('decoding a lens video', () => {
   it('closes the decoder and leftover frames when the consumer stops early', async () => {
     const decoder = fake();
     const frames = decodeVideo({
-      source,
+      sources: [source],
       video,
       range: { start: 0, end: 9 },
       wanted: ORDER.map((slot) => slot * PERIOD),
@@ -222,5 +222,50 @@ describe('decoding a lens video', () => {
     await frames.return(undefined);
     expect(decoder.isClosed).toBe(true);
     expect(decoder.frames.filter((frame) => !frame.isClosed)).toEqual([]);
+  });
+
+  it('reads each frame from the file it names, a recording split into chapters', async () => {
+    const decoder = fake();
+    const chapters = [
+      memorySource(Uint8Array.of(10, 11, 12, 13)),
+      memorySource(Uint8Array.of(20, 21)),
+    ];
+    const across: EncodedVideo = {
+      ...video,
+      frames: [
+        { ...video.frames[0]!, source: 0, offset: 1, size: 2 },
+        { ...video.frames[1]!, source: 1, offset: 0, size: 2 },
+      ],
+    };
+    await collect(
+      decodeVideo({
+        sources: chapters,
+        video: across,
+        range: { start: 0, end: 1 },
+        wanted: [],
+        codecs: decoder.codecs,
+      }),
+    );
+    expect(decoder.chunks.map((chunk) => chunk.bytes)).toEqual([
+      [11, 12],
+      [20, 21],
+    ]);
+  });
+
+  it('fails on a frame that names a file it was not given', async () => {
+    const decoder = fake();
+    const astray: EncodedVideo = { ...video, frames: [{ ...video.frames[0]!, source: 3 }] };
+    await expect(
+      collect(
+        decodeVideo({
+          sources: [source],
+          video: astray,
+          range: { start: 0, end: 0 },
+          wanted: [],
+          codecs: decoder.codecs,
+        }),
+      ),
+    ).rejects.toThrow(/file 3/);
+    expect(decoder.isClosed).toBe(true);
   });
 });

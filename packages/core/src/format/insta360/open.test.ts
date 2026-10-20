@@ -155,6 +155,7 @@ describe('opening an Insta360 recording from its files', () => {
     const opened = await openInsta360({ primary: file });
     expect(opened.videos).toHaveLength(2);
     expect(opened.sources).toEqual([file, file]);
+    expect(opened.videos.map((one) => one.frames[0]?.source)).toEqual([0, 1]);
     expect(opened.images[1]).toEqual({ texture: 1, origin: [3040, 0], extent: [3040, 3040] });
   });
 

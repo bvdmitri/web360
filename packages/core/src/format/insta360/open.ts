@@ -78,7 +78,7 @@ async function perLens(found: {
 }): Promise<Layout> {
   const { files, tracks, lenses } = found;
   if (tracks.length >= lenses) {
-    const videos = tracks.slice(0, lenses);
+    const videos = tracks.slice(0, lenses).map((video, file) => inFile(video, file));
     return { videos, sources: videos.map(() => files.primary) };
   }
   if (files.secondary === undefined) {
@@ -86,7 +86,13 @@ async function perLens(found: {
   }
   const [second] = await videosOf(files.secondary);
   if (second === undefined) throw new UnsupportedContainerError('the file has no video track');
-  return { videos: [...tracks, second], sources: [files.primary, files.secondary] };
+  const videos = [...tracks, second].map((video, file) => inFile(video, file));
+  return { videos, sources: [files.primary, files.secondary] };
+}
+
+// The video with each of its frames naming the source it is read from.
+function inFile(video: EncodedVideo, file: number): EncodedVideo {
+  return { ...video, frames: video.frames.map((frame) => ({ ...frame, source: file })) };
 }
 
 // A split recording's video holds one lens: the canvas's aspect over the lens count.

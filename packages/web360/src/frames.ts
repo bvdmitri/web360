@@ -1,6 +1,8 @@
 import {
+  cubeFrameAt,
   estimateColour,
   frameAt,
+  packCube,
   packStitch,
   type ColourCorrection,
   type DecodeRange,
@@ -9,7 +11,7 @@ import {
   type SpanFrame,
 } from '@web360/core';
 import { decodeVideo } from '@web360/webcodecs';
-import { createStitcher, type Stitcher } from '@web360/webgpu';
+import { createCubeRenderer, createStitcher, type Stitcher } from '@web360/webgpu';
 
 import { blendColour } from './colour';
 import { Web360Error } from './errors';
@@ -35,7 +37,9 @@ interface LensStream {
  * video's decoder is advanced to the frame it pairs with, and a frame two output frames pair with
  * (a lens file that dropped one) is kept and reused. The lens frames are copied to textures, the
  * core's stitch for the moment is packed and rendered, and the presented frame is yielded with its
- * time from the span's start. With colour matching on (the default), the lenses' vignetting and gains
+ * time from the span's start. A camera that stores a cube map it stitched itself (a GoPro) is
+ * rendered from its cube instead, with no colour work. Otherwise, with colour matching on (the
+ * default), the lenses' vignetting and gains
  * are estimated on the first frame and every thirtieth after it, blended into the running correction
  * so exposure follows the scene without flicker. Ending early or failing releases every decoder,
  * texture and frame held.
@@ -53,7 +57,7 @@ export async function* renderFrames(
   } finally {
     await Promise.all(pipeline.lenses.map((lens) => lens.close()));
     for (const texture of pipeline.textures) texture.destroy();
-    pipeline.stitcher.destroy();
+    pipeline.renderer.destroy();
     pipeline.presenter.destroy();
   }
 }
@@ -63,7 +67,7 @@ interface Pipeline {
   readonly lenses: readonly LensStream[];
   readonly textures: readonly GPUTexture[];
   readonly presenter: Presenter;
-  readonly stitcher: Stitcher;
+  readonly renderer: Stitcher;
   colour: ColourCorrection | undefined;
 }
 
@@ -76,7 +80,10 @@ function openPipeline(rendition: OpenedRendition): Pipeline {
     lenses: lensInputs(rendition).map((input) => lensStream(rendition, input)),
     textures: opened.videos.map((video) => lensTexture(device, video)),
     presenter,
-    stitcher: createStitcher(device, presenter.format),
+    renderer:
+      opened.cube === undefined
+        ? createStitcher(device, presenter.format)
+        : createCubeRenderer(device, presenter.format),
     colour: undefined,
   };
 }
@@ -88,7 +95,8 @@ async function drawFrame(
   const { rendition, textures } = pipeline;
   const { opened, device, platform, options } = rendition;
   const frames = await lensFrames(pipeline.lenses, step.planned);
-  if (options.gainMatching !== false && step.row % COLOUR_EVERY === 0) {
+  const isCube = opened.cube !== undefined;
+  if (!isCube && options.gainMatching !== false && step.row % COLOUR_EVERY === 0) {
     pipeline.colour = measuredColour(rendition, { frames, colour: pipeline.colour });
   }
   for (const [which, frame] of frames.entries()) {
@@ -103,8 +111,10 @@ async function drawFrame(
     shutterSteps: SHUTTER_STEPS,
     ...pipeline.colour,
   };
-  const stitch = frameAt(context, step.planned.timestamp);
-  pipeline.stitcher.render({ packed: packStitch(stitch), textures }, pipeline.presenter.target());
+  const packed = isCube
+    ? packCube(cubeFrameAt(context, step.planned.timestamp))
+    : packStitch(frameAt(context, step.planned.timestamp));
+  pipeline.renderer.render({ packed, textures }, pipeline.presenter.target());
 }
 
 function lensTexture(device: GPUDevice, video: EncodedVideo): GPUTexture {
@@ -120,7 +130,7 @@ function lensTexture(device: GPUDevice, video: EncodedVideo): GPUTexture {
 
 interface LensInput {
   readonly video: EncodedVideo;
-  readonly source: RandomAccessSource;
+  readonly sources: readonly RandomAccessSource[];
   readonly range: DecodeRange;
   readonly times: readonly number[];
 }
@@ -128,18 +138,18 @@ interface LensInput {
 function lensInputs(rendition: OpenedRendition): LensInput[] {
   const { opened, span } = rendition;
   return opened.videos.map((video, which) => {
-    const source = opened.sources[which];
     const range = span.decode[which];
-    if (source === undefined || range === undefined) {
-      throw new Web360Error('unreadable-recording', `video ${which} has no source to read`);
+    if (range === undefined) {
+      throw new Web360Error('unreadable-recording', `video ${which} has no frames to decode`);
     }
-    return { video, source, range, times: span.frames.map((planned) => planned.times[which] ?? 0) };
+    const times = span.frames.map((planned) => planned.times[which] ?? 0);
+    return { video, sources: opened.sources, range, times };
   });
 }
 
 function lensStream(rendition: OpenedRendition, input: LensInput): LensStream {
   const decoded = decodeVideo({
-    source: input.source,
+    sources: input.sources,
     video: input.video,
     range: input.range,
     wanted: input.times,

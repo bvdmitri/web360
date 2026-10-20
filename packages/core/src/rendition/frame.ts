@@ -3,6 +3,7 @@ import { rotationAt } from '../motion/interpolate';
 import { outputToCamera } from '../motion/view';
 import type { OpenedRecording } from '../model/video';
 import type { StitchFrame } from '../stitch/pack';
+import type { CubeFrame } from '../stitch/packCube';
 import type { Rgb } from '../stitch/render';
 import type { SeamColour } from '../stitch/seamColour';
 import { rollingShutter } from '../stitch/rollingShutter';
@@ -57,5 +58,29 @@ export function frameAt(context: RenditionContext, time: Microseconds): StitchFr
     shutter: { sample: shutter, rows: canvas[1], steps: context.shutterSteps },
     ...(context.gains !== undefined && { gains: context.gains }),
     ...(context.seam !== undefined && { seam: context.seam }),
+  };
+}
+
+/**
+ * The cube-map frame shown at `time` on the video's media clock, for a camera that stitches itself.
+ *
+ * @remarks Timed and rotated as {@link frameAt}, without the lens work: the cube is the recording's
+ * own (no faces, so black, for a recording that is not a cube map), and there is no rolling-shutter
+ * table or colour correction, the camera having applied its own. `shutterSteps` and the colour
+ * fields of the context are not read.
+ */
+export function cubeFrameAt(
+  context: Pick<RenditionContext, 'opened' | 'attitude' | 'view' | 'width'>,
+  time: Microseconds,
+): CubeFrame {
+  const { recording, cube } = context.opened;
+  const frameTime = recording.captureClock + time;
+  const attitude = rotationAt(context.attitude, frameTime, (sample) => sample.orientation);
+  const view = rotationAt(context.view, frameTime, (sample) => sample.orientation);
+  return {
+    cube: cube ?? { faces: [] },
+    correction: outputToCamera(recording.imuToCamera, attitude, view),
+    width: context.width,
+    height: 2 * Math.round(context.width / HALVES),
   };
 }

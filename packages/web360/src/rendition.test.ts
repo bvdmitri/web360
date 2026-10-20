@@ -24,6 +24,9 @@ const bytes = new Uint8Array(readFileSync(fixture));
 const file = new Blob([bytes]);
 const both = { main: { blob: file }, second: { blob: file } };
 const notARecording = new Blob([new Uint8Array(300)]);
+const goproFixture = path.resolve(path.dirname(fixture), '../gopro/max-eac.360');
+const gopro = new Blob([new Uint8Array(readFileSync(goproFixture))]);
+const FPS = 30_000 / 1001;
 
 // Kept for the whole run: the native bindings must outlive their adapter.
 const gpu = create([]);
@@ -283,6 +286,26 @@ describe('a rendition of a recording', () => {
     await frames.next();
     await frames.return(undefined);
     rendition.dispose();
+    expect(fakes.open).toEqual({ frames: 0, decoders: 0 });
+  });
+
+  it('renders a GoPro recording from its cube map, its chapters joined', async () => {
+    const fakes = fakePlatform();
+    const rendition = await openRendition(
+      { main: { blob: gopro }, following: [{ blob: gopro }] },
+      { width: 64, to: 0.1, stabilization: 'off', platform: fakes.platform },
+    );
+    expect(rendition.metadata.model).toMatch(/max/iu);
+    expect(rendition.metadata.duration).toBeCloseTo((2 * 6682) / FPS, 1);
+    const frames: Presented[] = [];
+    for await (const frame of rendition.frames()) frames.push(frame as unknown as Presented);
+    rendition.dispose();
+    expect(frames).toHaveLength(3);
+    // Every direction is in the cube; the first track's faces read red, the second's blue.
+    const pixels = litPixels(frames[0]);
+    expect(pixels).toHaveLength(64 * 32);
+    expect(pixels.some(([red, , blue]) => red > blue + 50)).toBe(true);
+    expect(pixels.some(([red, , blue]) => blue > red + 50)).toBe(true);
     expect(fakes.open).toEqual({ frames: 0, decoders: 0 });
   });
 });

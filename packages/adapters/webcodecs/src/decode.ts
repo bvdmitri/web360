@@ -26,9 +26,13 @@ export function browserCodecs(): Codecs {
   };
 }
 
-/** One video to decode: where its bytes are, which frames to feed, and which to keep. */
+/**
+ * One video to decode: the files its bytes are in, which frames to feed, and which to keep.
+ *
+ * @remarks A frame is read from `sources[frame.source]`, the first file when it names none.
+ */
 export interface DecodeJob {
-  readonly source: RandomAccessSource;
+  readonly sources: readonly RandomAccessSource[];
   readonly video: EncodedVideo;
   readonly range: DecodeRange;
   readonly wanted: readonly number[];
@@ -47,11 +51,11 @@ interface Decoding {
 /**
  * Decodes a range of a video's frames and yields the wanted ones, in presentation order.
  *
- * @remarks Frames are read from `source` and fed in decode order from `range.start` (a sync frame)
+ * @remarks Frames are read from the files they name and fed in decode order from `range.start` (a sync frame)
  * to `range.end`, at most `ahead` queued in the decoder at a time, so a long video never fills
  * memory. The decoder outputs frames in presentation order; a frame whose timestamp is in `wanted`
  * is yielded, and the caller closes it, while any other (the lead-in from the sync frame) is closed
- * here. A decoder error, or `signal` aborting, ends the iteration with that error. However it ends,
+ * here. A decoder error, a frame naming a file not given, or `signal` aborting, ends the iteration with that error. However it ends,
  * the decoder is closed, and so is every frame not yet handed out.
  */
 export async function* decodeVideo(job: DecodeJob): AsyncGenerator<VideoFrame, void, undefined> {
@@ -119,7 +123,11 @@ async function feed(job: DecodeJob, decoding: Decoding, index: number): Promise<
   }
   const frame = job.video.frames[index];
   if (frame === undefined) return index + 1;
-  const data = await job.source.read(frame.offset, frame.size);
+  const file = frame.source ?? 0;
+  const source = job.sources[file];
+  if (source === undefined)
+    throw new Error(`frame ${index} is in file ${file}, which was not given`);
+  const data = await source.read(frame.offset, frame.size);
   decoding.decoder.decode(
     job.codecs.createChunk({
       type: frame.isSync ? 'key' : 'delta',

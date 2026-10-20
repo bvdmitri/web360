@@ -6,7 +6,8 @@ import type { CameraRecording, LensOptics } from '../model/recording';
 import type { OpenedRecording } from '../model/video';
 import { fromRotationVector } from '../shared/math/quaternion';
 import { degrees, microseconds, seconds } from '../shared/units/units';
-import { frameAt } from './frame';
+import { goproCubeMap } from '../format/gopro/cube';
+import { cubeFrameAt, frameAt } from './frame';
 
 const optics = (pitch: number): LensOptics => ({
   projection: 'equidistant',
@@ -112,5 +113,27 @@ describe('one frame of a rendition', () => {
       microseconds(0),
     );
     expect(unplaced.lenses[1]?.image).toEqual({ texture: 0, origin: [0, 0], extent: [6080, 3040] });
+  });
+});
+
+describe('one frame of a cube-map rendition', () => {
+  const cube = goproCubeMap({ width: 5888, height: 1920 });
+  const context = { opened: { ...opened, cube }, attitude: turning, view: still, width: 64 };
+
+  it('carries the cube and rotates by the view at the frame moment on the motion clock', () => {
+    const frame = cubeFrameAt(context, microseconds(500_000));
+    const expected = outputToCamera(
+      recording.imuToCamera,
+      fromRotationVector([0, 0, 1_500_000 * 0.000002]),
+      fromRotationVector([0, 0, 1]),
+    );
+    expect(frame.cube).toBe(cube);
+    expect(frame.correction.w).toBeCloseTo(expected.w, 6);
+    expect(frame.correction.z).toBeCloseTo(expected.z, 6);
+    expect([frame.width, frame.height]).toEqual([64, 32]);
+  });
+
+  it('has no faces for a recording that is not a cube map', () => {
+    expect(cubeFrameAt({ ...context, opened }, microseconds(0)).cube.faces).toEqual([]);
   });
 });

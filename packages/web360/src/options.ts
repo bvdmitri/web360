@@ -1,11 +1,18 @@
-import type { Insta360Opened, OrientationSample, Seconds, Span, Stabilization } from '@web360/core';
+import type {
+  OpenedRecording,
+  OrientationSample,
+  RandomAccessSource,
+  Seconds,
+  Span,
+  Stabilization,
+} from '@web360/core';
 
 import type { Platform } from './platform';
 
 /**
  * How to render: the output width (the height is half), the span in seconds of the recording, the
- * stabilization and its smoothing, whether to match the lenses' colour, a signal to cancel, and,
- * outside a browser, the platform.
+ * stabilization and its smoothing, whether to match the lenses' colour (a camera that stitches
+ * itself has none to match), a signal to cancel, and, outside a browser, the platform.
  */
 export interface RenditionOptions {
   readonly width: number;
@@ -18,9 +25,14 @@ export interface RenditionOptions {
   readonly platform?: Platform;
 }
 
+/** An opened recording and the files its frames are read from, as a vendor's opener returns them. */
+export type SourcedRecording = OpenedRecording & {
+  readonly sources: readonly RandomAccessSource[];
+};
+
 /** What the frame loop is given once a rendition is open. */
 export interface OpenedRendition {
-  readonly opened: Insta360Opened;
+  readonly opened: SourcedRecording;
   readonly attitude: readonly OrientationSample[];
   readonly view: readonly OrientationSample[];
   readonly span: Span;
