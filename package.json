@@ -42,7 +42,7 @@
     "typedoc": "0.28.20",
     "typedoc-plugin-markdown": "4.13.1",
     "typedoc-vitepress-theme": "1.1.4",
-    "typescript": "5.9.3",
+    "typescript": "6.0.3",
     "typescript-eslint": "8.70.0",
     "vitepress": "1.6.4",
     "vitest": "4.1.11"
