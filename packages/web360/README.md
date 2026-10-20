@@ -35,6 +35,14 @@ try {
 
 <!-- #region guide -->
 
+## Looking around and reframing
+
+`createViewer(canvas)` draws flat views of a `<video>` on a WebGPU canvas (also from
+`@bvdmitri/web360/view`, without the stitcher), and `createReframer({ width, height })` turns
+decoded 360 frames into flat ones for export. A `View` is a pan, tilt, roll, field of view and lens
+distance; `viewAt(keyframes, time)` follows a smooth path between keyframed views. See
+[Looking around and reframing](https://bvdmitri.github.io/web360/guide/views).
+
 ## Options
 
 - `width`: the output width in pixels; the height is half.

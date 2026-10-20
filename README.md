@@ -23,6 +23,8 @@ that uses it.
 - **Stabilizes** from the camera's gyro, levelled by its accelerometer or its own gravity reading,
   with a choice of modes: `smooth`, `lock`, `horizon`, `follow` or `off`.
 - **Yields `VideoFrame`s** for a span of the recording, for the application to encode.
+- **Draws flat views** of an equirectangular video, to look around in a player or to export a flat
+  video along a keyframed path of views, with lenses from linear to a tiny planet.
 
 See [packages/web360/README.md](./packages/web360/README.md) for usage, options and errors.
 

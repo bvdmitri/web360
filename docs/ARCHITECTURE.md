@@ -7,13 +7,13 @@ implements a port the core defines, or lives in the published package that wires
 
 ## Packages
 
-| Path                          | Role                                                                                                                                              |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/core`               | `@web360/core`: the vendor-neutral model of a recording, the vendor readers and the pure functions over them. No runtime dependencies.            |
-| `packages/adapters/webgpu`    | `@web360/webgpu`: the WGSL passes that render the lens stitch (`createStitcher`) and a cube map (`createCubeRenderer`). Depends on the core only. |
-| `packages/adapters/webcodecs` | `@web360/webcodecs`: decoding an `EncodedVideo` with WebCodecs (`decodeVideo`, `browserCodecs`). Depends on the core only.                        |
-| `packages/web360`             | `@bvdmitri/web360`, the published package: the public API, wiring the core to the adapters and the browser. It bundles the workspace packages.    |
-| `tools/checks`                | The repository checks: no em or en dashes, no private sample terms, no personal data in a fixture.                                                |
+| Path                          | Role                                                                                                                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/core`               | `@web360/core`: the vendor-neutral model of a recording, the vendor readers and the pure functions over them. No runtime dependencies.                                                |
+| `packages/adapters/webgpu`    | `@web360/webgpu`: the WGSL passes that render the lens stitch (`createStitcher`), a cube map (`createCubeRenderer`) and a flat view (`createViewRenderer`). Depends on the core only. |
+| `packages/adapters/webcodecs` | `@web360/webcodecs`: decoding an `EncodedVideo` with WebCodecs (`decodeVideo`, `browserCodecs`). Depends on the core only.                                                            |
+| `packages/web360`             | `@bvdmitri/web360`, the published package: the public API, wiring the core to the adapters and the browser. It bundles the workspace packages.                                        |
+| `tools/checks`                | The repository checks: no em or en dashes, no private sample terms, no personal data in a fixture.                                                                                    |
 
 ## Inside the core
 
@@ -28,6 +28,7 @@ implements a port the core defines, or lives in the published package that wires
 | `optics/`          | The equidistant fisheye lens and the equi-angular cube map                                                | `shared/`, `model/`                                          |
 | `stitch/`          | The CPU reference stitch and cube render, colour estimation, rolling shutter, the packed GPU layouts      | `shared/`, `model/`, `motion/`, `optics/`                    |
 | `rendition/`       | Planning a rendition: the frames of a span, the attitude and stabilized view, each frame's stitch         | `shared/`, `model/`, `motion/`, `stitch/`                    |
+| `view/`            | Flat views of an equirectangular frame: the projection, the lens presets, a keyframed path of views       | `shared/`, `stitch/`                                         |
 
 Only `format/` reads bytes. Vendor readers never import each other: each produces the same model,
 and everything downstream works on that model without knowing the vendor. The core never imports
@@ -47,5 +48,15 @@ an adapter, the published package or a tool, and an adapter never imports anothe
 - `blobSource(blob)` (`packages/web360/src/blob.ts`): a `RandomAccessSource` over a `Blob`.
 - The types `RecordingFile`, `RenditionSource`, `RenditionOptions`, `RenditionMetadata`,
   `Rendition` and `Stabilization`.
+- `createViewer(canvas, options)` (`packages/web360/src/viewer.ts`): draws flat views of a `<video>`
+  or a `VideoFrame` on a canvas, for looking around (ADR 0024).
+- `createReframer(options)` (`packages/web360/src/reframer.ts`): turns decoded equirectangular
+  frames into flat views of them, for exporting a reframed video.
+- `viewAt`, `clampView`, `VIEW_PRESETS`, `DEFAULT_VIEW` and the types `View`, `ViewKeyframe`,
+  `ViewLens` and `ViewPreset` (`packages/web360/src/views.ts`): views in plain degrees and a
+  keyframed path of them (ADR 0025).
+
+`@bvdmitri/web360/view` (`packages/web360/src/view.ts`) exports the viewer, the view functions and
+`Web360Error` alone, for a page that shows 360 video without stitching it.
 
 There is no playback state anywhere in the library.

@@ -1,6 +1,6 @@
 {
   "name": "@bvdmitri/web360",
-  "version": "0.5.1",
+  "version": "0.6.0",
   "description": "Stitch and stabilize 360 recordings in the browser, on WebGPU and WebCodecs.",
   "license": "MIT",
   "author": "bvdmitri",
@@ -19,6 +19,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./view": {
+      "types": "./dist/view.d.ts",
+      "default": "./dist/view.js"
     }
   },
   "files": [
@@ -50,7 +54,9 @@
     "insta360",
     "gopro",
     "webgpu",
-    "webcodecs"
+    "webcodecs",
+    "reframe",
+    "viewer"
   ],
   "publishConfig": {
     "access": "public"
