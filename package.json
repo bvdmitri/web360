@@ -38,7 +38,7 @@
     "eslint-plugin-unicorn": "75.0.0",
     "husky": "9.1.7",
     "lint-staged": "17.5.1",
-    "prettier": "3.9.8",
+    "prettier": "3.9.10",
     "typedoc": "0.28.20",
     "typedoc-plugin-markdown": "4.13.1",
     "typedoc-vitepress-theme": "1.1.4",
