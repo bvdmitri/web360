@@ -28,6 +28,7 @@ describe('ByteReader', () => {
     const r = ByteReader.of(new Uint8Array(f.buffer, f.byteOffset, f.byteLength));
     expect(r.f32le(0)).toBe(1.5);
     expect(r.f64le(4)).toBe(-2.25);
+    expect(reader(0x3f, 0xc0, 0x00, 0x00).f32be(0)).toBe(1.5);
   });
 
   it('refuses a 64-bit value a number cannot hold exactly', () => {

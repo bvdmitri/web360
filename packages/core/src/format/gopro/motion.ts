@@ -1,8 +1,11 @@
 import type { MotionSample } from '../../model/recording';
+import type { OrientationSample } from '../../motion/orientation';
+import { normalize } from '../../shared/math/quaternion';
 import type { ByteReader } from '../../shared/binary/byteReader';
 import { microseconds } from '../../shared/units/units';
 import type { Sample } from '../mp4/timeline';
 import { childrenOf, klvNodes, type KlvNode } from './gpmf';
+import { orient } from './axes';
 import { readStream, UnsupportedStreamError } from './stream';
 
 const MICROS_PER_SECOND = 1_000_000;
@@ -51,12 +54,84 @@ export function readMotion(
 
 function collect(reader: ByteReader, strm: KlvNode | undefined, window: Window): MotionSample[] {
   if (strm === undefined) return [];
+  const stream = readStream(reader, strm);
+  const step = window.span / stream.samples.length;
+  return stream.samples.map((row, index) => ({
+    timestamp: microseconds(window.start + index * step),
+    value: orient(toVector(row), stream.orientation),
+  }));
+}
+
+/**
+ * A GoPro recording's per-frame orientation as the camera reports it: its own attitude (`CORI`),
+ * the turn it applied to the image relative to the body (`IORI`), and the gravity direction
+ * (`GRAV`), each on the media clock.
+ */
+export interface GoproOrientation {
+  readonly camera: OrientationSample[];
+  readonly image: OrientationSample[];
+  readonly gravity: MotionSample[];
+}
+
+/**
+ * Reads the per-frame orientation streams a GoPro writes beside its sensors.
+ *
+ * @remarks `CORI` and `IORI` are unit quaternions stored as signed 16-bit `w, x, y, z` over their
+ * `SCAL` (32767), one per video frame; `GRAV` is a unit vector likewise. Each block's samples are
+ * spaced over the block's duration from its decode time, as {@link readMotion} spaces the sensors.
+ * The quaternions are renormalised against the rounding of their 16-bit storage. A recording
+ * without these streams (an older body) reads as empty lists.
+ */
+export function readFrameOrientation(
+  reader: ByteReader,
+  samples: readonly Sample[],
+  timescale: number,
+): GoproOrientation {
+  const out: GoproOrientation = { camera: [], image: [], gravity: [] };
+  for (const sample of samples) {
+    const window = {
+      start: toMicros(sample.decodeTime, timescale),
+      span: toMicros(sample.duration, timescale),
+    };
+    const streams = streamsOf(reader, sample);
+    out.camera.push(...quaternions(reader, streamFor(reader, streams, 'CORI'), window));
+    out.image.push(...quaternions(reader, streamFor(reader, streams, 'IORI'), window));
+    out.gravity.push(...collect(reader, streamFor(reader, streams, 'GRAV'), window));
+  }
+  return out;
+}
+
+/** The camera's name (`DVNM`) from the first telemetry block that states it, or `''`. */
+export function readDeviceName(reader: ByteReader, samples: readonly Sample[]): string {
+  for (const sample of samples) {
+    const region = { start: sample.offset, end: sample.offset + sample.size };
+    const name = klvNodes(reader, region)
+      .flatMap((node) => childrenOf(reader, node))
+      .find((node) => node.key === 'DVNM');
+    if (name !== undefined) {
+      return reader
+        .ascii(name.region.start, name.region.end - name.region.start)
+        .replaceAll('\u{0000}', '');
+    }
+  }
+  return '';
+}
+
+function quaternions(
+  reader: ByteReader,
+  strm: KlvNode | undefined,
+  window: Window,
+): OrientationSample[] {
+  if (strm === undefined) return [];
   const rows = readStream(reader, strm).samples;
   const step = window.span / rows.length;
-  return rows.map((row, index) => ({
-    timestamp: microseconds(window.start + index * step),
-    value: toVector(row),
-  }));
+  return rows.map((row, index) => {
+    const [w = 1, x = 0, y = 0, z = 0] = row;
+    return {
+      timestamp: microseconds(window.start + index * step),
+      orientation: normalize({ w, x, y, z }),
+    };
+  });
 }
 
 function streamsOf(reader: ByteReader, sample: Sample): KlvNode[] {

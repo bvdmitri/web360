@@ -3,6 +3,8 @@ import { childrenOf, type KlvNode } from './gpmf';
 
 const INT16 = 0x73;
 const INT16_BYTES = 2;
+const FLOAT = 0x66;
+const FLOAT_BYTES = 4;
 
 /**
  * One GPMF sensor stream decoded into physical units: its samples, labels and block start time.
@@ -33,22 +35,46 @@ export class UnsupportedStreamError extends Error {
 /**
  * Decodes a GPMF `STRM` node into its samples in physical units.
  *
- * @remarks Supports the signed-16-bit sensor streams (`GYRO`, `ACCL`, `MAGN`); a stream whose data
- * leaf or `SCAL` is some other type throws {@link UnsupportedStreamError} rather than misreading
- * its bytes. Absent labels read as the empty string and an absent `STMP` as `0`.
+ * @remarks Supports the signed-16-bit streams divided by their `SCAL` (the sensors `GYRO`, `ACCL`,
+ * `MAGN`; the per-frame `CORI` and `IORI` quaternions and `GRAV` vectors) and the 32-bit float
+ * streams, which are already in their unit (`SHUT`); any other type throws
+ * {@link UnsupportedStreamError} rather than misreading its bytes. Absent labels read as the empty string and an absent `STMP` as `0`.
  */
 export function readStream(reader: ByteReader, strm: KlvNode): GpmfStream {
   const children = childrenOf(reader, strm);
   const data = children.at(-1);
   if (data === undefined) throw new UnsupportedStreamError('the stream has no data leaf');
-  if (data.type !== INT16) throw new UnsupportedStreamError(`the ${data.key} stream is not int16`);
   return {
     name: labelOf(reader, children, 'STNM'),
     unit: labelOf(reader, children, 'SIUN'),
     orientation: labelOf(reader, children, 'ORIN'),
     startTime: startTimeOf(reader, children),
-    samples: scaledSamples(reader, data, scaleDivisors(reader, children)),
+    samples: samplesOf(reader, { data, children }),
   };
+}
+
+function samplesOf(
+  reader: ByteReader,
+  stream: { readonly data: KlvNode; readonly children: KlvNode[] },
+): number[][] {
+  const { data } = stream;
+  if (data.type === FLOAT) return floatSamples(reader, data);
+  if (data.type !== INT16) throw new UnsupportedStreamError(`the ${data.key} stream is not int16`);
+  return scaledSamples(reader, data, scaleDivisors(reader, stream.children));
+}
+
+function floatSamples(reader: ByteReader, leaf: KlvNode): number[][] {
+  const components = leaf.structSize / FLOAT_BYTES;
+  const rows: number[][] = [];
+  for (let sample = 0; sample < leaf.count; sample += 1) {
+    const base = leaf.region.start + sample * leaf.structSize;
+    const row: number[] = [];
+    for (let axis = 0; axis < components; axis += 1) {
+      row.push(reader.f32be(base + axis * FLOAT_BYTES));
+    }
+    rows.push(row);
+  }
+  return rows;
 }
 
 function scaledSamples(reader: ByteReader, leaf: KlvNode, divisors: number[]): number[][] {

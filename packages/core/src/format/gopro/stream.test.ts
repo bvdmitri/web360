@@ -96,9 +96,9 @@ describe('gpmf stream decode', () => {
     expect(() => decode(strm([]))).toThrow(UnsupportedStreamError);
   });
 
-  it('refuses a data leaf that is not int16', () => {
-    const floatLeaf = klv('SHUT', [FLOAT, 4, 1], zeros(4));
-    expect(() => decode(strm([...scal([1]), ...floatLeaf]))).toThrow(UnsupportedStreamError);
+  it('refuses a data leaf that is neither int16 nor float', () => {
+    const wideLeaf = klv('TICK', [INT32, 4, 1], zeros(4));
+    expect(() => decode(strm([...scal([1]), ...wideLeaf]))).toThrow(UnsupportedStreamError);
   });
 
   it('refuses a stream without SCAL', () => {
@@ -116,5 +116,28 @@ describe('gpmf stream decode', () => {
     expect(() => decode(strm([...scal([2, 3]), ...triples('GYRO', [[1, 2, 3]])]))).toThrow(
       UnsupportedStreamError,
     );
+  });
+
+  it('reads a float stream, which carries no SCAL, as it is', () => {
+    const shutter = [0.001, 0.0005];
+    const bytes = shutter.flatMap((value) => {
+      const view = new DataView(new ArrayBuffer(4));
+      view.setFloat32(0, value);
+      return [...new Uint8Array(view.buffer, view.byteOffset, view.byteLength)];
+    });
+    const result = decode(
+      strm([...stnm('Exposure time'), ...siun('s'), ...klv('SHUT', [FLOAT, 4, 2], bytes)]),
+    );
+    expect(result.samples.map((row) => row[0])).toEqual(shutter.map((value) => Math.fround(value)));
+  });
+
+  it('reads a quaternion stream of four scaled components per sample', () => {
+    const quaternions = klv(
+      'CORI',
+      [INT16, 8, 1],
+      [32_767, 0, -16_384, 16_384].flatMap((n) => signed16be(n)),
+    );
+    const result = decode(strm([...scal([32_767]), ...quaternions]));
+    expect(result.samples[0]?.map((value) => Number(value.toFixed(4)))).toEqual([1, 0, -0.5, 0.5]);
   });
 });

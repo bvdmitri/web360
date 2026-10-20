@@ -110,6 +110,10 @@ export class ByteReader {
     return this.view.getFloat32(this.checked(offset, U32), true);
   }
 
+  public f32be(offset: number): number {
+    return this.view.getFloat32(this.checked(offset, U32), false);
+  }
+
   public f64le(offset: number): number {
     return this.view.getFloat64(this.checked(offset, U64), true);
   }

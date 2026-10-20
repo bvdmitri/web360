@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest';
 
 import { ByteReader } from '../../shared/binary/byteReader';
 import type { Sample } from '../mp4/timeline';
-import { readMotion } from './motion';
+import { readDeviceName, readFrameOrientation, readMotion } from './motion';
 import { UnsupportedStreamError } from './stream';
 
 const INT16 = 0x73;
 const UINT32 = 0x4c;
+const CHAR = 0x63;
 const CONTAINER = 0x00;
 const TIMESCALE = 1000;
 const BLOCK_TICKS = 1000;
@@ -103,5 +104,83 @@ describe('gopro motion', () => {
   it('refuses a motion stream that is not a 3-vector', () => {
     const { reader, samples } = assemble([devc([...sensor('GYRO', 1, [[1, 2]])])]);
     expect(() => readMotion(reader, samples, TIMESCALE)).toThrow(UnsupportedStreamError);
+  });
+});
+
+const orin = (order: string): number[] => klv('ORIN', [CHAR, order.length, 1], ascii(order));
+const label = (key: string, text: string): number[] =>
+  klv(key, [CHAR, text.length, 1], ascii(text));
+
+describe('gopro motion axes', () => {
+  it('puts each sensor channel on the camera axis its ORIN names', () => {
+    const block = devc([
+      ...dvid(),
+      ...strm([...orin('Zxy'), ...scal([10]), ...leaf('GYRO', 3, [[10, 20, 30]])]),
+    ]);
+    const { reader, samples } = assemble([block]);
+    expect(readMotion(reader, samples, TIMESCALE).angularVelocity[0]?.value).toEqual([-2, -3, 1]);
+  });
+});
+
+describe('gopro frame orientation', () => {
+  const quarter = Math.round(32_767 * Math.SQRT1_2);
+  const block = devc([
+    ...dvid(),
+    ...label('DVNM', 'GoPro Max'),
+    ...strm([
+      ...scal([32_767]),
+      ...leaf('CORI', 4, [
+        [32_767, 0, 0, 0],
+        [quarter, 0, 0, quarter],
+      ]),
+    ]),
+    ...strm([
+      ...scal([32_767]),
+      ...leaf('IORI', 4, [
+        [32_767, 0, 0, 0],
+        [32_767, 0, 0, 0],
+      ]),
+    ]),
+    ...strm([
+      ...scal([32_767]),
+      ...leaf('GRAV', 3, [
+        [0, 0, 32_767],
+        [0, 32_767, 0],
+      ]),
+    ]),
+  ]);
+
+  it('reads the camera and image orientations as w, x, y, z quaternions, spaced over the block', () => {
+    const { reader, samples } = assemble([block, block]);
+    const { camera, image } = readFrameOrientation(reader, samples, TIMESCALE);
+    expect(camera.map((sample) => sample.timestamp)).toEqual([0, 500_000, 1_000_000, 1_500_000]);
+    expect(camera[1]?.orientation.w).toBeCloseTo(Math.SQRT1_2, 4);
+    expect(camera[1]?.orientation.z).toBeCloseTo(Math.SQRT1_2, 4);
+    expect(image[1]?.orientation).toEqual({ w: 1, x: 0, y: 0, z: 0 });
+  });
+
+  it('reads the gravity direction per frame', () => {
+    const { reader, samples } = assemble([block]);
+    const { gravity } = readFrameOrientation(reader, samples, TIMESCALE);
+    expect(gravity.map((sample) => sample.value)).toEqual([
+      [0, 0, 1],
+      [0, 1, 0],
+    ]);
+  });
+
+  it('reads nothing from blocks that carry no orientation', () => {
+    const { reader, samples } = assemble([devc([...dvid(), ...gyro([[1, 2, 3]])])]);
+    expect(readFrameOrientation(reader, samples, TIMESCALE)).toEqual({
+      camera: [],
+      image: [],
+      gravity: [],
+    });
+  });
+
+  it('names the camera from the first block that does', () => {
+    const { reader, samples } = assemble([devc([...dvid(), ...gyro([[1, 2, 3]])]), block]);
+    expect(readDeviceName(reader, samples)).toBe('GoPro Max');
+    const silent = assemble([devc([...dvid()])]);
+    expect(readDeviceName(silent.reader, silent.samples)).toBe('');
   });
 });
