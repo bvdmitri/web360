@@ -1,4 +1,4 @@
-# web360
+# @bvdmitri/web360
 
 Stitch and stabilize raw 360 recordings in the browser, on WebGPU and WebCodecs.
 
@@ -7,7 +7,7 @@ files a user picked, decodes both lenses, and stitches them into stabilized equi
 on the GPU. It hands you `VideoFrame`s; encoding, audio and storage stay with your application.
 
 ```ts
-import { openRendition, Web360Error } from 'web360';
+import { openRendition, Web360Error } from '@bvdmitri/web360';
 
 const rendition = await openRendition(
   { main: { blob: mainFile }, second: { blob: secondFile } },

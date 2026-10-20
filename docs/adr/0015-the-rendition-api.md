@@ -12,7 +12,7 @@ dedicated worker, usually), on WebCodecs and WebGPU.
 
 ## Decision
 
-- **`packages/web360` is the published package** (`web360` on npm). Its entry is
+- **`packages/web360` is the published package** (`@bvdmitri/web360` on npm, the unscoped name being refused as too close to another package's). Its entry is
   `openRendition(source, options)`: `source` is the recording's files as `Blob`s (`main`, the file
   with the trailer, and `second` for a split recording); `options` are the output `width` (the height
   is half), `from` and `to` in seconds, `stabilization` (`off`, `lock`, `horizon`, `smooth`,
