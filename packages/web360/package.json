@@ -25,7 +25,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsdown",
+    "build": "node --max-old-space-size=8192 node_modules/tsdown/dist/run.mjs",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
     "prepublishOnly": "pnpm build"
