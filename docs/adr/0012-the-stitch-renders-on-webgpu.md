@@ -25,7 +25,8 @@ WebGPU narrows support only a little.
 - **Lens images are ordinary sampled textures**, one per lens or one shared, sampled linearly with
   calibration-canvas pixels at texel centres. A decoded `VideoFrame` reaches one by
   `copyExternalImageToTexture`. External textures would skip that copy but cannot be exercised
-  outside a browser; one texture path keeps the shader testable.
+  outside a browser; one texture path keeps the shader testable. (How a frame reaches the texture
+  in a browser is ADR 0022: imported where the browser can, copied on the CPU where it cannot.)
 - **The shader is tested against the reference on a real GPU**: the adapter's tests render
   synthetic lens images through Dawn's Node bindings (`webgpu`, a dev dependency) and compare every
   output pixel to `renderEquirectangular` with a bilinear sampler, for the plain stitch, gains,

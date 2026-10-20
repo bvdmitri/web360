@@ -2,7 +2,7 @@ import type { EncodedVideo, LensPicture } from '@web360/core';
 import { browserCodecs, type Codecs } from '@web360/webcodecs';
 
 import { Web360Error } from './errors';
-import { externalFrameCopier, type FrameCopier } from './copier';
+import { canImportFrames, cpuFrameCopier, externalFrameCopier, type FrameCopier } from './copier';
 import { readbackPresenter, type Presenter } from './presenter';
 
 /**
@@ -22,7 +22,8 @@ export interface Platform {
     device: GPUDevice,
     size: { readonly width: number; readonly height: number },
   ): Presenter;
-  upload(device: GPUDevice, frame: VideoFrame, texture: GPUTexture): void;
+  /** Copies a decoded frame onto a texture; done once a returned promise settles. */
+  upload(device: GPUDevice, frame: VideoFrame, texture: GPUTexture): void | Promise<void>;
   picture(frame: VideoFrame, size: number): LensPicture;
 }
 
@@ -33,9 +34,7 @@ export function browserPlatform(): Platform {
     ensureDecodable,
     device: requestDevice,
     presenter: (device, size) => readbackPresenter(device, size),
-    upload: (device, frame, texture): void => {
-      copierFor(device)(frame, texture);
-    },
+    upload: (device, frame, texture) => copierFor(device)(frame, texture),
     picture: (frame, size): LensPicture => {
       const canvas = new OffscreenCanvas(size, size);
       const context = canvas.getContext('2d', { willReadFrequently: true });
@@ -63,20 +62,37 @@ async function ensureDecodable(video: EncodedVideo): Promise<void> {
 
 // Each device's frame copier, made on its first frame.
 const copiers = new WeakMap<GPUDevice, FrameCopier>();
+// The devices opened where frames cannot be imported, which copy them on the CPU instead.
+const cpuCopying = new WeakSet<GPUDevice>();
+// Whether each GPU can import decoded frames, found out once.
+const importable = new WeakMap<GPU, Promise<boolean>>();
 
 function copierFor(device: GPUDevice): FrameCopier {
   const known = copiers.get(device);
   if (known !== undefined) return known;
-  const made = externalFrameCopier(device);
+  const made = cpuCopying.has(device) ? cpuFrameCopier(device) : externalFrameCopier(device);
   copiers.set(device, made);
   return made;
 }
 
 async function requestDevice(): Promise<GPUDevice> {
   const gpu = typeof navigator === 'object' && 'gpu' in navigator ? navigator.gpu : undefined;
-  const adapter = await gpu?.requestAdapter();
-  if (adapter === null || adapter === undefined) {
+  if (gpu === undefined) {
     throw new Web360Error('render-unavailable', 'this browser has no WebGPU adapter');
   }
-  return adapter.requestDevice();
+  // Checked before the adapter is fetched: a failed import loses every adapter fetched before it.
+  const canImport = await importsFrames(gpu);
+  const adapter = await gpu.requestAdapter();
+  if (adapter === null) {
+    throw new Web360Error('render-unavailable', 'this browser has no WebGPU adapter');
+  }
+  const device = await adapter.requestDevice();
+  if (!canImport) cpuCopying.add(device);
+  return device;
+}
+
+function importsFrames(gpu: GPU): Promise<boolean> {
+  const known = importable.get(gpu) ?? canImportFrames(gpu);
+  importable.set(gpu, known);
+  return known;
 }

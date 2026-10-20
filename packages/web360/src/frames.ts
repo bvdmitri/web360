@@ -101,7 +101,7 @@ async function drawFrame(
   }
   for (const [which, frame] of frames.entries()) {
     const texture = textures[which];
-    if (texture !== undefined) platform.upload(device, frame, texture);
+    if (texture !== undefined) await platform.upload(device, frame, texture);
   }
   const context = {
     opened,

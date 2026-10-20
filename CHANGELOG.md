@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-10-20
+
+### Fixed
+
+- Stitching works in a browser that cannot hand decoded video frames to WebGPU (headless Linux
+  Chromium on SwiftShader, as CI runs it): web360 checks once per page and copies the frames on the
+  CPU there, instead of losing the GPU device on the first frame.
+
 ## [0.4.0] - 2026-10-20
 
 ### Added
