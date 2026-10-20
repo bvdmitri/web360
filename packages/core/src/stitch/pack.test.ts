@@ -40,12 +40,7 @@ const slot = (packed: Float32Array, index: number): number[] => [
 ];
 const lensSlot = (packed: Float32Array, lensIndex: number, offset: number): number[] =>
   slot(packed, STITCH_LAYOUT.header + lensIndex * STITCH_LAYOUT.lensSlots + offset);
-const quaternionOf = ([x, y, z, w]: number[]): Quaternion => ({
-  w: w ?? 0,
-  x: x ?? 0,
-  y: y ?? 0,
-  z: z ?? 0,
-});
+const quaternionOf = ([x = 0, y = 0, z = 0, w = 0]: number[]): Quaternion => ({ w, x, y, z });
 
 // The shader's projection, written over the packed numbers, so the test pins what it relies on.
 function projectPacked(
@@ -54,12 +49,12 @@ function projectPacked(
   direction: Vector3,
 ): readonly [number, number] {
   const inverse = quaternionOf(lensSlot(packed, index, 0));
-  const [cx, cy, focal] = lensSlot(packed, index, 1);
+  const [cx = 0, cy = 0, focal = 0] = lensSlot(packed, index, 1);
   const [x, y, z] = rotate(inverse, direction);
   const angle = Math.atan2(Math.hypot(x, y), z);
   const azimuth = Math.atan2(y, x);
-  const r = (focal ?? 0) * angle;
-  return [(cx ?? 0) + r * Math.cos(azimuth), (cy ?? 0) + r * Math.sin(azimuth)];
+  const r = focal * angle;
+  return [cx + r * Math.cos(azimuth), cy + r * Math.sin(azimuth)];
 }
 
 const shutter = (lensIndex: number, pixel: readonly [number, number]): Quaternion =>

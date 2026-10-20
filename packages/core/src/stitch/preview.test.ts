@@ -407,11 +407,11 @@ interface ShutterOption {
 }
 
 const parseShutter = (text: string): ShutterOption => {
-  const [axis, first, second, reference] = text.split(',', 4);
+  const [axis, first = '1', second = '1', reference = '0.5'] = text.split(',', 4);
   return {
     axis: axis === 'x' ? 'x' : 'y',
-    directions: [Number(first ?? '1'), Number(second ?? '1')],
-    reference: Number(reference ?? '0.5'),
+    directions: [Number(first), Number(second)],
+    reference: Number(reference),
   };
 };
 

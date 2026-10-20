@@ -1,6 +1,6 @@
 {
   "name": "@bvdmitri/web360",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Stitch and stabilize 360 recordings in the browser, on WebGPU and WebCodecs.",
   "license": "MIT",
   "author": "bvdmitri",

@@ -128,7 +128,7 @@ const readBack = async (texture: GPUTexture): Promise<Uint8Array> => {
 const stitchOnGpu = async (frame: StitchFrame): Promise<Uint8Array> => {
   const textures = [upload(texels(0)), upload(texels(1))];
   const target = device().createTexture({
-    size: OUTPUT,
+    size: [...OUTPUT],
     format: 'rgba8unorm',
     usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
   });
@@ -245,7 +245,7 @@ describe('the WebGPU stitcher', () => {
   it('reads both lenses from one texture when they share it', async () => {
     const shared = upload(texels(0));
     const target = device().createTexture({
-      size: OUTPUT,
+      size: [...OUTPUT],
       format: 'rgba8unorm',
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
     });
@@ -265,7 +265,7 @@ describe('the WebGPU stitcher', () => {
   it('refuses a frame without a lens image', () => {
     const stitcher = createStitcher(device(), 'rgba8unorm');
     const target = device().createTexture({
-      size: OUTPUT,
+      size: [...OUTPUT],
       format: 'rgba8unorm',
       usage: GPUTextureUsage.RENDER_ATTACHMENT,
     });
@@ -279,7 +279,7 @@ describe('the WebGPU stitcher', () => {
   it('renders frame after frame, growing its buffer when a frame needs more', async () => {
     const textures = [upload(texels(0)), upload(texels(1))];
     const target = device().createTexture({
-      size: OUTPUT,
+      size: [...OUTPUT],
       format: 'rgba8unorm',
       usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
     });

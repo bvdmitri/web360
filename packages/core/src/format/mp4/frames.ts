@@ -23,9 +23,10 @@ export function encodedFramesOf(track: Track): EncodedFrame[] {
 
 /** A movie's video tracks, each ready for a decoder, in track order. */
 export function encodedVideosOf(tracks: readonly Track[]): EncodedVideo[] {
-  return tracks.flatMap((track) =>
-    track.handler === VIDEO_HANDLER && track.sampleEntry !== undefined
-      ? [{ ...track.sampleEntry, frames: encodedFramesOf(track) }]
-      : [],
-  );
+  const videos: EncodedVideo[] = [];
+  for (const track of tracks) {
+    if (track.handler !== VIDEO_HANDLER || track.sampleEntry === undefined) continue;
+    videos.push({ ...track.sampleEntry, frames: encodedFramesOf(track) });
+  }
+  return videos;
 }

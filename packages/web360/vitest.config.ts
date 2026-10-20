@@ -11,5 +11,7 @@ export default defineProject({
     include: ['src/**/*.test.ts'],
     environment: 'node',
     testTimeout: GPU_TEST_TIMEOUT_MS,
+    // Opening a GPU device on a runner's software Vulkan can take as long as a test.
+    hookTimeout: GPU_TEST_TIMEOUT_MS,
   },
 });

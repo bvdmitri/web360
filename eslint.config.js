@@ -120,6 +120,8 @@ export default defineConfig(
       'unicorn/no-null': 'off',
       // One-line TSDoc summaries (`/** ... */`) are the house style.
       'unicorn/single-line-block-comment-style': 'off',
+      // Documentation comments are TSDoc, which keeps the leading `*` on every line (CLAUDE.md).
+      'unicorn/no-asterisk-prefix-in-documentation-comments': 'off',
       'unicorn/prefer-iterator-to-array': 'off',
       'unicorn/name-replacements': [
         'error',
@@ -144,5 +146,15 @@ export default defineConfig(
       'max-lines': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
     },
+  },
+  {
+    // A config file's default export is the one top-level call it exists for.
+    files: ['**/*.config.ts'],
+    rules: { 'unicorn/no-top-level-side-effects': 'off' },
+  },
+  {
+    // A test helper names the inputs it builds from, even when every test passes the same one.
+    files: ['**/*.test.ts'],
+    rules: { 'unicorn/no-unnecessary-parameters': 'off' },
   },
 );

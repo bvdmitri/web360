@@ -87,7 +87,7 @@ async function requestDevice(): Promise<GPUDevice> {
     throw new Web360Error('render-unavailable', 'this browser has no WebGPU adapter');
   }
   // Checked before the adapter is fetched: a failed import loses every adapter fetched before it.
-  const canImport = await importsFrames(gpu);
+  const canImport = await canImportFramesOn(gpu);
   const adapter = await gpu.requestAdapter();
   if (adapter === null) {
     throw new Web360Error('render-unavailable', 'this browser has no WebGPU adapter');
@@ -97,7 +97,7 @@ async function requestDevice(): Promise<GPUDevice> {
   return device;
 }
 
-function importsFrames(gpu: GPU): Promise<boolean> {
+function canImportFramesOn(gpu: GPU): Promise<boolean> {
   const known = importable.get(gpu) ?? canImportFrames(gpu);
   importable.set(gpu, known);
   return known;

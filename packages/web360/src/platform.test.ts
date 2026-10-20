@@ -72,16 +72,15 @@ describe('the browser platform', () => {
   });
 
   it('asks the decoder whether it takes the codec, and reports when it does not', async () => {
-    const isConfigSupported =
-      vi.fn<(config: VideoDecoderConfig) => Promise<{ supported: boolean }>>();
-    vi.stubGlobal('VideoDecoder', { isConfigSupported });
-    isConfigSupported.mockResolvedValueOnce({ supported: true });
+    const configSupport = vi.fn<(config: VideoDecoderConfig) => Promise<{ supported: boolean }>>();
+    vi.stubGlobal('VideoDecoder', { isConfigSupported: configSupport });
+    configSupport.mockResolvedValueOnce({ supported: true });
     await expect(browserPlatform().ensureDecodable(video)).resolves.toBeUndefined();
-    expect(isConfigSupported.mock.calls[0]?.[0]).toMatchObject({
+    expect(configSupport.mock.calls[0]?.[0]).toMatchObject({
       codec: 'avc1.4d4034',
       codedWidth: 2880,
     });
-    isConfigSupported.mockResolvedValueOnce({ supported: false });
+    configSupport.mockResolvedValueOnce({ supported: false });
     await expect(browserPlatform().ensureDecodable(video)).rejects.toMatchObject({
       code: 'codec-unsupported',
     });

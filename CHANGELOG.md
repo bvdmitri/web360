@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-20
+
+### Changed
+
+- Built with TypeScript 6, and the development tools updated (prettier, eslint plugins, fast-check,
+  the setup-node action).
+
 ## [0.5.0] - 2026-10-20
 
 ### Added
@@ -87,6 +94,7 @@ All notable changes to this project are documented here. The format follows
 - `Web360Error` codes for what stops a rendition: no WebGPU, no WebCodecs, an unsupported codec, a
   missing lens file, an unreadable recording, a decode failure.
 
+[0.5.1]: https://github.com/bvdmitri/web360/releases/tag/v0.5.1
 [0.5.0]: https://github.com/bvdmitri/web360/releases/tag/v0.5.0
 [0.4.3]: https://github.com/bvdmitri/web360/releases/tag/v0.4.3
 [0.4.2]: https://github.com/bvdmitri/web360/releases/tag/v0.4.2

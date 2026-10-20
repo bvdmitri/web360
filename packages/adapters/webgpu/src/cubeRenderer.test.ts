@@ -96,7 +96,7 @@ const upload = (data: Uint8Array<ArrayBuffer>): GPUTexture => {
 
 const target = (): GPUTexture =>
   device().createTexture({
-    size: OUTPUT,
+    size: [...OUTPUT],
     format: 'rgba8unorm',
     usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
   });

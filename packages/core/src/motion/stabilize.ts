@@ -53,7 +53,7 @@ export function lockToWorld(orientation: readonly OrientationSample[]): Stabiliz
 export function levelHorizon(orientation: readonly OrientationSample[]): StabilizationSample[] {
   return orientation.map((sample) => ({
     timestamp: sample.timestamp,
-    correction: multiply(headingAbout(sample.orientation, WORLD_UP), conjugate(sample.orientation)),
+    correction: multiply(headingAboutUp(sample.orientation), conjugate(sample.orientation)),
   }));
 }
 
@@ -77,7 +77,7 @@ export function smoothHeading(
 ): StabilizationSample[] {
   return smoothTowards(orientation, {
     timeConstant,
-    target: (sample) => headingAbout(sample, WORLD_UP),
+    target: (sample) => headingAboutUp(sample),
   });
 }
 
@@ -142,12 +142,12 @@ function weight(previous: Microseconds, now: Microseconds, timeConstant: Seconds
   return 1 - Math.exp(-dt / timeConstant);
 }
 
-function headingAbout(q: Quaternion, axis: Vector3): Quaternion {
-  const projection = q.x * axis[0] + q.y * axis[1] + q.z * axis[2];
+function headingAboutUp(q: Quaternion): Quaternion {
+  const projection = q.x * WORLD_UP[0] + q.y * WORLD_UP[1] + q.z * WORLD_UP[2];
   return normalize({
     w: q.w,
-    x: axis[0] * projection,
-    y: axis[1] * projection,
-    z: axis[2] * projection,
+    x: WORLD_UP[0] * projection,
+    y: WORLD_UP[1] * projection,
+    z: WORLD_UP[2] * projection,
   });
 }

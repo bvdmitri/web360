@@ -208,12 +208,16 @@ function averageOf(colours: readonly Rgb[]): Rgb {
 
 // Untrusted directions take the value between their nearest trusted neighbours around the ring.
 function fillRing(measured: readonly (Rgb | undefined)[]): Rgb[] {
-  const known = measured.flatMap((value, bin) => (value === undefined ? [] : [{ bin, value }]));
+  const known: { bin: number; value: Rgb }[] = [];
+  for (const [bin, value] of measured.entries())
+    if (value !== undefined) known.push({ bin, value });
   const [first] = known;
   const last = known.at(-1);
-  return first === undefined || last === undefined
-    ? measured.map(() => NONE)
-    : measured.map((value, bin) => value ?? between({ known, first, last }, bin));
+  return measured.map((value, bin) =>
+    first === undefined || last === undefined
+      ? NONE
+      : (value ?? between({ known, first, last }, bin)),
+  );
 }
 
 interface Known {
