@@ -22,7 +22,11 @@
     "test:coverage": "vitest run --coverage",
     "test:mutation": "pnpm --filter @web360/core test:mutation",
     "checks": "node tools/checks/src/main.ts --all",
-    "verify": "pnpm checks && pnpm typecheck && pnpm lint && pnpm format:check && pnpm depcruise && pnpm test:coverage"
+    "verify": "pnpm checks && pnpm typecheck && pnpm lint && pnpm format:check && pnpm depcruise && pnpm test:coverage",
+    "docs:api": "typedoc",
+    "docs:build": "pnpm docs:api && vitepress build docs",
+    "docs:dev": "pnpm docs:api && vitepress dev docs",
+    "docs:preview": "vitepress preview docs"
   },
   "devDependencies": {
     "@types/node": "26.6.1",
@@ -35,8 +39,12 @@
     "husky": "9.1.7",
     "lint-staged": "17.5.1",
     "prettier": "3.9.8",
+    "typedoc": "0.28.20",
+    "typedoc-plugin-markdown": "4.13.1",
+    "typedoc-vitepress-theme": "1.1.4",
     "typescript": "5.9.3",
     "typescript-eslint": "8.70.0",
+    "vitepress": "1.6.4",
     "vitest": "4.1.11"
   }
 }

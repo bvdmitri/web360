@@ -1,0 +1,16 @@
+{
+  "name": "@web360/docs",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The documentation site's helpers: links from a page into the code, rewritten to their place on GitHub.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.1",
+    "vitest": "4.1.11"
+  }
+}

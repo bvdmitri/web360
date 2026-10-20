@@ -1,12 +1,20 @@
 # @bvdmitri/web360
 
-Stitch and stabilize raw 360 recordings in the browser, on WebGPU and WebCodecs.
+[![npm](https://img.shields.io/npm/v/@bvdmitri/web360)](https://www.npmjs.com/package/@bvdmitri/web360)
+[![docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://bvdmitri.github.io/web360/)
+[![CI](https://github.com/bvdmitri/web360/actions/workflows/ci.yml/badge.svg)](https://github.com/bvdmitri/web360/actions/workflows/ci.yml)
+
+Stitch and stabilize raw 360 recordings in the browser, on WebGPU and WebCodecs. The
+[documentation](https://bvdmitri.github.io/web360/) has the guide, the supported cameras and the
+API reference.
 
 web360 opens an Insta360 recording (`.insv`, a single file or a split `_00_`/`_10_` pair) or a GoPro
 MAX or MAX2 recording (`.360`, its chapters joined) from the files a user picked, decodes it, and
 renders stabilized equirectangular frames on the GPU: an Insta360's two lenses stitched, a GoPro's
 cube map, which the camera stitched itself, read out. It hands you `VideoFrame`s; encoding, audio
 and storage stay with your application.
+
+<!-- #region guide -->
 
 ```ts
 import { openRendition, Web360Error } from '@bvdmitri/web360';
@@ -73,6 +81,8 @@ telemetry delay come from real footage, and it is stabilized by its gyro, levell
 records.
 The original MAX opens with the MAX2's values until footage from it sets its own. A GoPro's 8K
 video needs a browser that decodes HEVC at that size.
+
+<!-- #endregion guide -->
 
 ## License
 

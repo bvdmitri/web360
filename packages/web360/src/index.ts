@@ -7,4 +7,4 @@ export { browserPlatform } from './platform';
 export type { Platform } from './platform';
 export type { Presenter } from './presenter';
 export { blobSource } from './blob';
-export type { Stabilization } from '@web360/core';
+export type { RandomAccessSource, Stabilization } from '@web360/core';

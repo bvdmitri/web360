@@ -1,0 +1,16 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["packages/web360/src/index.ts"],
+  "tsconfig": "packages/web360/tsconfig.json",
+  "plugin": ["typedoc-plugin-markdown", "typedoc-vitepress-theme"],
+  "out": "docs/api",
+  "docsRoot": "docs",
+  "name": "@bvdmitri/web360",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "treatWarningsAsErrors": true,
+  "excludeExternals": true,
+  "gitRevision": "main",
+  "gitRemote": "origin"
+}

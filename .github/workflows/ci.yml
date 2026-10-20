@@ -11,6 +11,8 @@ concurrency:
 
 permissions:
   contents: read
+  # Codecov's upload proves which repository it comes from with an OIDC token.
+  id-token: write
 
 # Actions are pinned to the commit of the release named beside each.
 jobs:
@@ -32,3 +34,11 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install --yes --no-install-recommends mesa-vulkan-drivers
       - run: pnpm install --frozen-lockfile
       - run: pnpm verify
+      # The documentation site builds, its links resolve, and the API reference has no warnings.
+      - run: pnpm docs:build
+      # Coverage goes to Codecov over OIDC (no token); an outage there never fails CI.
+      - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        with:
+          files: coverage/lcov.info
+          use_oidc: true
+          fail_ci_if_error: false

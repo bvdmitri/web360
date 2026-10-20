@@ -20,7 +20,7 @@ is (rule 5).
 
 | Topic                                          | Document                                             |
 | ---------------------------------------------- | ---------------------------------------------------- |
-| Where the work stands and what is next         | [PLAN.md](./PLAN.md)                                 |
+| Where the work stands and what is next         | [docs/roadmap.md](./docs/roadmap.md)                 |
 | Layers, packages, dependency rules, public API | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)       |
 | Private samples and committed fixtures         | [docs/SAMPLES.md](./docs/SAMPLES.md)                 |
 | The ISO base media container                   | [docs/FORMAT-iso-bmff.md](./docs/FORMAT-iso-bmff.md) |
@@ -66,7 +66,10 @@ is (rule 5).
     commit; the pre-commit and commit-msg hooks enforce it.
 14. **Pin everything.** Exact dependency versions, a committed lockfile, CI actions pinned to a
     commit.
-15. **Keep `CHANGELOG.md` current** for every user-visible change.
+15. **Keep `CHANGELOG.md` current** for every user-visible change, and release by tag: bump
+    `packages/web360/package.json`, name the `[Unreleased]` section for the version, and push a
+    `vX.Y.Z` tag. The release workflow publishes to npm and creates the GitHub Release; a tag is
+    not a release until both exist (docs/guide/releasing.md).
 
 ## Commands
 

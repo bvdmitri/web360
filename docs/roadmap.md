@@ -1,20 +1,20 @@
 # Roadmap
 
-What web360 does today and what comes next. Read it with [CLAUDE.md](./CLAUDE.md) (the rules) and
-[docs/](./docs) (the design and the file formats).
+What web360 does today and what comes next. Read it with [CLAUDE.md](../CLAUDE.md) (the rules) and
+these pages (the design and the file formats).
 
 ## What exists
 
-- **Insta360 (`.insv`)** (`format/insta360`, [FORMAT-insta360.md](./docs/FORMAT-insta360.md)): the
+- **Insta360 (`.insv`)** (`format/insta360`, [FORMAT-insta360.md](./FORMAT-insta360.md)): the
   trailer, the info, motion and exposure records and the v1 calibration, a single file or a split
   `_00_`/`_10_` pair. The ONE R with its 5.7K 360 lens is measured: its field of view, coverage,
   vignetting, IMU alignment and rolling-shutter order come from ONE R footage, and a fixture covers
   it. Other Insta360 bodies open and stitch with the ONE R's values, which are provisional for them.
-- **GoPro (`.360`)** (`format/gopro`, [FORMAT-gopro.md](./docs/FORMAT-gopro.md)): the GPMF
+- **GoPro (`.360`)** (`format/gopro`, [FORMAT-gopro.md](./FORMAT-gopro.md)): the GPMF
   telemetry and the dual-track equi-angular cube map, chapters joined. The MAX2 is measured: its
   cube layout, gyro alignment and telemetry delay come from MAX2 footage. The original MAX opens
   with the MAX2's values; it is provisional and no fixture of it is committed.
-- **The container** (`format/mp4`, [FORMAT-iso-bmff.md](./docs/FORMAT-iso-bmff.md)): the box tree
+- **The container** (`format/mp4`, [FORMAT-iso-bmff.md](./FORMAT-iso-bmff.md)): the box tree
   and sample tables, read from random-access sources without loading the media.
 - **Motion**: gyro integration levelled offline by the accelerometer or the camera's own gravity
   (ADR 0016, 0023), and the stabilization modes `off`, `lock`, `horizon`, `smooth` and `follow`

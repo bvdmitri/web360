@@ -8,3 +8,7 @@ reports/
 # Private recordings and their catalogue stay on the developer's machine (docs/SAMPLES.md).
 samples/*
 !samples/README.md
+# The documentation site's build, cache and generated API pages (pnpm docs:build).
+docs/.vitepress/dist/
+docs/.vitepress/cache/
+docs/api/

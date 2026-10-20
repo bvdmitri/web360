@@ -76,10 +76,10 @@ All notable changes to this project are documented here. The format follows
 - `Web360Error` codes for what stops a rendition: no WebGPU, no WebCodecs, an unsupported codec, a
   missing lens file, an unreadable recording, a decode failure.
 
-[0.4.3]: https://www.npmjs.com/package/@bvdmitri/web360/v/0.4.3
-[0.4.2]: https://www.npmjs.com/package/@bvdmitri/web360/v/0.4.2
-[0.4.1]: https://www.npmjs.com/package/@bvdmitri/web360/v/0.4.1
-[0.4.0]: https://www.npmjs.com/package/@bvdmitri/web360/v/0.4.0
-[0.3.0]: https://www.npmjs.com/package/@bvdmitri/web360/v/0.3.0
-[0.2.0]: https://www.npmjs.com/package/@bvdmitri/web360/v/0.2.0
-[0.1.0]: https://www.npmjs.com/package/@bvdmitri/web360/v/0.1.0
+[0.4.3]: https://github.com/bvdmitri/web360/releases/tag/v0.4.3
+[0.4.2]: https://github.com/bvdmitri/web360/releases/tag/v0.4.2
+[0.4.1]: https://github.com/bvdmitri/web360/releases/tag/v0.4.1
+[0.4.0]: https://github.com/bvdmitri/web360/releases/tag/v0.4.0
+[0.3.0]: https://github.com/bvdmitri/web360/releases/tag/v0.3.0
+[0.2.0]: https://github.com/bvdmitri/web360/releases/tag/v0.2.0
+[0.1.0]: https://github.com/bvdmitri/web360/releases/tag/v0.1.0

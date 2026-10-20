@@ -1,8 +1,15 @@
 # web360
 
+[![CI](https://github.com/bvdmitri/web360/actions/workflows/ci.yml/badge.svg)](https://github.com/bvdmitri/web360/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/bvdmitri/web360/branch/main/graph/badge.svg)](https://codecov.io/gh/bvdmitri/web360)
+[![npm](https://img.shields.io/npm/v/@bvdmitri/web360)](https://www.npmjs.com/package/@bvdmitri/web360)
+[![docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://bvdmitri.github.io/web360/)
+[![license](https://img.shields.io/npm/l/@bvdmitri/web360)](./LICENSE)
+
 Stitch and stabilize raw 360 recordings in the browser, on WebGPU and WebCodecs.
 
-web360 is published on npm as [`@bvdmitri/web360`](https://www.npmjs.com/package/@bvdmitri/web360).
+web360 is published on npm as [`@bvdmitri/web360`](https://www.npmjs.com/package/@bvdmitri/web360),
+with its documentation at [bvdmitri.github.io/web360](https://bvdmitri.github.io/web360/).
 It is a library, not a player: playback, clocks, audio sync and controls belong to the application
 that uses it.
 
@@ -33,7 +40,7 @@ See [packages/web360/README.md](./packages/web360/README.md) for usage, options 
 
 A camera body is supported once its format is described in `docs/` and covered by a test fixture.
 The ONE R and the MAX2 are; the original MAX has no fixture and is provisional, as are the other
-Insta360 bodies. See [PLAN.md](./PLAN.md) for what is next.
+Insta360 bodies. See [the roadmap](./docs/roadmap.md) for what is next.
 
 ## Development
 

@@ -1,0 +1,16 @@
+{
+  "name": "@web360/release",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Release tooling: a version's notes read from CHANGELOG.md, for the GitHub Release the release workflow creates.",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.1",
+    "vitest": "4.1.11"
+  }
+}

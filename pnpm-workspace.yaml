@@ -3,6 +3,8 @@ packages:
   - packages/adapters/*
   - tools/*
 
-# The Dawn bindings ship prebuilt; their install script only clears the macOS quarantine flag.
 allowBuilds:
+  # esbuild's install script checks its platform binary, which the docs site's build (Vite) runs.
+  esbuild: true
+  # The Dawn bindings ship prebuilt; their install script only clears the macOS quarantine flag.
   webgpu: false
