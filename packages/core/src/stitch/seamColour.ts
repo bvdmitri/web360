@@ -93,9 +93,11 @@ export function seamShift(
  * already flattened and matched in gain.
  *
  * @remarks For each direction a patch across the overlap is sampled in both lenses (four azimuths
- * by five offsets within two degrees of the seam), saturated and black samples left out. Where the
- * patch's differences disagree among themselves, the lenses are seeing different things there (a
- * jumper or a helmet on the seam, through parallax) and the direction is not trusted; its value is
+ * by five offsets within two degrees of the seam), saturated and black samples left out, and the
+ * difference is that of the patch's average colours, so texture registered a pixel apart cancels.
+ * Where the patch's colour varies very differently in the two lenses, they are seeing different
+ * things there (a jumper or a helmet on the seam, through parallax) and the direction is not
+ * trusted; its value is
  * filled in from the trusted ones either side. The result is smoothed around the ring and limited,
  * so one bad patch cannot paint the sky. A camera with other than two lenses gets no correction.
  */
@@ -116,22 +118,27 @@ function measureBin(
   samplers: readonly LensSampler[],
   bin: number,
 ): Rgb | undefined {
-  const differences: Rgb[] = [];
+  const pairs: Pair[] = [];
   for (let step = 0; step < PATCH_AZIMUTHS; step += 1) {
     const azimuth = -Math.PI + ((bin + (step + 1 / 2) / PATCH_AZIMUTHS) * TAU) / SEAM_BINS;
     for (const offset of PATCH_OFFSETS) {
-      const difference = differenceAt(lenses, samplers, { azimuth, offset });
-      if (difference !== undefined) differences.push(difference);
+      const pair = pairAt(lenses, samplers, { azimuth, offset });
+      if (pair !== undefined) pairs.push(pair);
     }
   }
-  return trusted(differences);
+  return trusted(pairs);
 }
 
-function differenceAt(
+interface Pair {
+  readonly first: Rgb;
+  readonly second: Rgb;
+}
+
+function pairAt(
   lenses: readonly LensOptics[],
   samplers: readonly LensSampler[],
   at: { readonly azimuth: number; readonly offset: number },
-): Rgb | undefined {
+): Pair | undefined {
   const [first, second] = lenses;
   if (first === undefined || second === undefined) return undefined;
   const direction = seamDirection(first, at);
@@ -142,7 +149,7 @@ function differenceAt(
   });
   return colourA === undefined || colourB === undefined
     ? undefined
-    : [colourB[0] - colourA[0], colourB[1] - colourA[1], colourB[2] - colourA[2]];
+    : { first: colourA, second: colourB };
 }
 
 // The camera-frame direction at an azimuth around the seam and an offset from it, in the first
@@ -165,16 +172,27 @@ function isUsable(colour: Rgb): boolean {
   return brightest < SATURATED && brightest > DARK;
 }
 
-function trusted(differences: readonly Rgb[]): Rgb | undefined {
-  if (differences.length < MIN_SAMPLES) return undefined;
-  const mean = averageOf(differences);
-  let spread = 0;
-  for (const difference of differences) {
-    for (let channel = 0; channel < CHANNELS; channel += 1) {
-      spread += ((difference[channel] ?? 0) - (mean[channel] ?? 0)) ** 2;
-    }
+// The patch's colour in the second lens over the first, compared as averages so that texture the
+// lenses register a pixel apart cancels out; a patch whose colour varies very differently in
+// the two lenses holds different things in them (a jumper or a helmet in one) and is not trusted.
+function trusted(pairs: readonly Pair[]): Rgb | undefined {
+  if (pairs.length < MIN_SAMPLES) return undefined;
+  const first = pairs.map((pair) => pair.first);
+  const second = pairs.map((pair) => pair.second);
+  if (Math.abs(spreadOf(first) - spreadOf(second)) > MISMATCH) return undefined;
+  const [a, b] = [averageOf(first), averageOf(second)];
+  return [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+}
+
+// How much a patch's colour varies, over the three channels.
+function spreadOf(colours: readonly Rgb[]): number {
+  const mean = averageOf(colours);
+  let variance = 0;
+  for (const colour of colours) {
+    variance +=
+      (colour[0] - mean[0]) ** 2 + (colour[1] - mean[1]) ** 2 + (colour[2] - mean[2]) ** 2;
   }
-  return Math.sqrt(spread / (CHANNELS * differences.length)) > MISMATCH ? undefined : mean;
+  return Math.sqrt(variance / (CHANNELS * colours.length));
 }
 
 function averageOf(colours: readonly Rgb[]): Rgb {

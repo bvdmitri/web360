@@ -5,7 +5,7 @@
  * @remarks It applies the reference stitch (`renderEquirectangular` in the core) to the numbers
  * `packStitch` lays out, slot for slot: the output direction rotated by the correction, each lens
  * projected by the equidistant model (and again through the tabulated rolling-shutter turn of the
- * row it lands on), the overlap weighted by each lens's margin, and each lens's colour devignetted,
+ * row it lands on), the overlap weighted by each lens's margin eased in over the overlap's width, and each lens's colour devignetted,
  * scaled by its gain and shifted by the seam colour field. The angle from the optical axis is taken as `atan2` of the sine and cosine
  * rather than `acos`, which keeps single precision accurate near the lens centre. Lens images come
  * from up to two textures, sampled linearly with canvas pixels at texel centres; outside its image a
@@ -124,6 +124,15 @@ fn seamShift(lens: u32, direction: vec3f) -> vec3f {
   return difference * select(-0.5, 0.5, lens == 0u) * fade;
 }
 
+fn easedMargin(lens: u32, margin: f32) -> f32 {
+  let feather = 2.0 * lensSlot(lens, 2u).y - PI;
+  if (margin < 0.0 || !(feather > 0.0)) {
+    return margin;
+  }
+  let t = clamp(margin / feather, 0.0, 1.0);
+  return t * t * (3.0 - 2.0 * t);
+}
+
 fn outputDirection(position: vec2f) -> vec3f {
   let size = stitch[1].xy;
   let longitude = PI - (position.x / size.x) * 2.0 * PI;
@@ -140,7 +149,7 @@ fn fragmentMain(@builtin(position) position: vec4f) -> @location(0) vec4f {
   var seen = 0.0;
   for (var lens = 0u; lens < lensCount; lens++) {
     let landing = lookThrough(lens, direction);
-    let margin = lensSlot(lens, 2u).y - landing.angle;
+    let margin = easedMargin(lens, lensSlot(lens, 2u).y - landing.angle);
     if (margin < 0.0) {
       continue;
     }

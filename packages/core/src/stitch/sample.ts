@@ -1,6 +1,7 @@
 import type { LensOptics } from '../model/recording';
 import { project, type Projected } from '../optics/lens';
 import { rotate, type Quaternion, type Vector3 } from '../shared/math/quaternion';
+import { degreesToRadians } from '../shared/units/units';
 
 /**
  * The extra turn a lens's image row was exposed with, relative to the frame's moment.
@@ -39,9 +40,9 @@ interface Covered {
  *
  * @remarks `direction` is in the camera frame, the frame the lens poses are stated in; a renderer
  * rotates the output direction by the stabilization correction before calling this. Each covered
- * lens contributes, weighted by how far inside its field of view the direction sits (its margin),
- * so the weights sum to one and feather to zero at a lens's edge, handing off smoothly across the
- * seam. A direction no lens covers returns nothing (a hole). Samples come in lens order. Exposure
+ * lens contributes, weighted by how far inside its field of view the direction sits (its margin,
+ * eased in with a smoothstep over the overlap's width), so the weights sum to one and feather to
+ * zero at a lens's edge with no kink, handing off smoothly across the seam. A direction no lens covers returns nothing (a hole). Samples come in lens order. Exposure
  * and vignetting are corrected on the lens colours, not here (ADR 0008). With a `shutter`, each lens
  * is sampled where the direction pointed when that lens's row was exposed: projected once at the
  * frame's moment to find the row, then again through that row's turn.
@@ -59,7 +60,12 @@ export function stitchSample(
       shutter === undefined ? undefined : (pixel): Quaternion => shutter(index, pixel),
     );
     if (!seen.covered) continue;
-    covered.push({ lens: index, pixel: seen.pixel, reach: seen.reach, margin: seen.margin });
+    covered.push({
+      lens: index,
+      pixel: seen.pixel,
+      reach: seen.reach,
+      margin: easedMargin(lens, seen.margin),
+    });
   }
   if (covered.length === 0) return [];
   const total = covered.reduce((sum, one) => sum + one.margin, 0);
@@ -69,6 +75,19 @@ export function stitchSample(
     reach: one.reach,
     weight: total > 0 ? one.margin / total : 1 / covered.length,
   }));
+}
+
+// The margin eased in over the overlap's width (the coverage beyond a hemisphere), with no kink
+// where a lens starts to count: a linear ramp draws a line along a lens's edge wherever the lenses'
+// colours differ. Two opposite lenses still share a direction on the seam evenly.
+// The smoothstep `t^2 (3 - 2t)`: zero slope at both ends.
+const SMOOTHSTEP_RISE = 3;
+
+function easedMargin(lens: LensOptics, margin: number): number {
+  const feather = degreesToRadians(lens.coverage) - Math.PI;
+  if (!(feather > 0)) return margin;
+  const t = Math.min(1, Math.max(0, margin / feather));
+  return t * t * (SMOOTHSTEP_RISE - 2 * t);
 }
 
 function lookThrough(

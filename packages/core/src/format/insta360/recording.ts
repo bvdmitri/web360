@@ -17,10 +17,10 @@ const MS_PER_SECOND = 1000;
 // The v1 calibration carries neither angle, so the reader supplies them per camera model (ADR 0007).
 // For the ONE R: the mapping reaches the calibration radius at 183 degrees, the value at which the
 // two lenses register best across the seam on far-field (freefall) footage; and the image is
-// trusted out to 188 degrees, where the 2880-pixel frame crops the illuminated circle (about 1.03
-// times the radius).
+// trusted out to 185 degrees (about 1.011 times the radius), inside the illuminated circle's dark
+// border, which at some azimuths begins before 1.03 and drew a line along the seam (ADR 0019).
 const FIELD_OF_VIEW_DEGREES = 183;
-const COVERAGE_DEGREES = 188;
+const COVERAGE_DEGREES = 185;
 const FIELD_OF_VIEW = degrees(FIELD_OF_VIEW_DEGREES);
 
 // The ONE R's falloff toward the rim of its image circle, measured on the owner's footage by

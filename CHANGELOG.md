@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-20
+
+### Fixed
+
+- No ribbon or dark line along the seam: each lens is used only inside its clean image circle, and
+  the lenses hand over with a smooth blend instead of a linear ramp.
+- The seam colour correction now works across clouds and ground as well as clear sky, comparing
+  patch averages so texture no longer makes it give up.
+
 ## [0.2.0] - 2026-10-20
 
 ### Changed
