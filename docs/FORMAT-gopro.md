@@ -33,8 +33,29 @@ The camera stitches its two lenses itself; each video track holds three cube fac
   faces (columns 1984 and 3904 on the MAX2) are continuous.
 - **Faces are equi-angular**: pixels are evenly spaced in angle across a face, not in tangent, so a
   face coordinate maps to a direction through `atan` rather than linearly.
-- Which cube face is where, and how the second track is turned, is stated with the cube model when
-  it is measured on frames.
+- **Which face is where.** Measured on MAX2 frames by matching every face edge against every other
+  (the pixel line just inside each edge; the true neighbours correlate at 0.93 to 0.999, and every
+  pair matches both ways): the first track holds the left, front and right faces, the second the
+  down, back and up faces, each stored with its columns as `u` and rows as `v`. In the camera's
+  cube frame (front along `+x`, `+z` up, `-y` to the front's right), a face's direction for face
+  coordinates `u, v` in `[-1, 1]` is `centre + tan(u * pi/4) * across + tan(v * pi/4) * down`:
+
+  | Track | Face  | Centre | `across` (u) | `down` (v) | Seam band |
+  | ----- | ----- | ------ | ------------ | ---------- | --------- |
+  | 1     | left  | `+y`   | `+x`         | `-z`       | yes       |
+  | 1     | front | `+x`   | `-y`         | `-z`       | no        |
+  | 1     | right | `-y`   | `-x`         | `-z`       | yes       |
+  | 2     | down  | `-z`   | `-x`         | `+y`       | yes       |
+  | 2     | back  | `-x`   | `+z`         | `+y`       | no        |
+  | 2     | up    | `+z`   | `+x`         | `+y`       | yes       |
+
+  The second track's faces are therefore turned a quarter against the first's. The original MAX is
+  stated by its public geometry to share this order; it is not yet measured on its frames.
+
+- **The band in a seamed face** sits at its middle: the face's logical columns `[F/2 - b/2, F/2 +
+b/2)` (face size `F`, band `b`) are stored twice, first as seen by one lens and then, immediately
+  after, as seen by the other, and the rest of the face follows; a seamed face is `F + b` columns
+  wide in the track.
 
 ## Telemetry (GPMF)
 
