@@ -119,4 +119,13 @@ describe('levelling the orientation', () => {
     expect(2 * Math.atan2(last.z, last.w)).toBeCloseTo(((at.length - 1) * STEP) / 1e6, 4);
     expect(tiltAgainst(last, UP)).toBeLessThan(1e-6);
   });
+
+  it('falls back to plain integration when the timestamps span far more than the samples could', () => {
+    const gyro = samples([0, STEP, 1e15], () => [0, 0, 0]);
+    const levelled = levelOrientation(
+      gyro,
+      samples([0, 1e15], () => [GRAVITY, 0, 0]),
+    );
+    expect(levelled.map((sample) => sample.orientation.w)).toEqual([1, 1, 1]);
+  });
 });

@@ -20,6 +20,9 @@ const DEFAULT_WINDOW = seconds(WINDOW_SECONDS);
 const STANDARD_GRAVITY = 9.81;
 const TRUST = 0.2;
 const REACH = 3;
+// A span needing more bins than a day's worth, or ten per sample, is not a recording's.
+const MAX_BINS = 864_000;
+const BINS_PER_SAMPLE = 10;
 const UP: Vector3 = [0, 0, 1];
 
 /** How slowly the vertical is allowed to move: the Gaussian width it is averaged over. */
@@ -38,7 +41,8 @@ export interface LevelOptions {
  * attitude is turned by the smallest tilt that takes that averaged up to the world's. The tilt moves
  * at the speed of the gyro's drift, so it adds nothing a viewer sees from frame to frame, unlike a
  * filter that follows the accelerometer as it goes. Heading is the gyro's. Without an
- * accelerometer the result is plain integration. It needs the whole recording, which a rendition
+ * accelerometer, or with timestamps spread far wider than its samples (no recording's), the
+ * result is plain integration. It needs the whole recording, which a rendition
  * has. See ADR 0016.
  */
 export function levelOrientation(
@@ -50,7 +54,11 @@ export function levelOrientation(
   const first = integrated[0];
   const last = integrated.at(-1);
   if (first === undefined || last === undefined || acceleration.length === 0) return integrated;
-  const bins = upBins(integrated, acceleration, { start: first.timestamp, end: last.timestamp });
+  const count = Math.floor((last.timestamp - first.timestamp) / BIN) + 1;
+  if (count > Math.min(MAX_BINS, BINS_PER_SAMPLE * (integrated.length + acceleration.length))) {
+    return integrated;
+  }
+  const bins = upBins(integrated, acceleration, { start: first.timestamp, count });
   const smoothed = smooth(bins, ((options.window ?? DEFAULT_WINDOW) * MICROS_PER_SECOND) / BIN);
   const tilts = smoothed.map((up, index) => ({
     timestamp: (first.timestamp + (index + 1 / 2) * BIN) as Microseconds,
@@ -68,12 +76,9 @@ export function levelOrientation(
 function upBins(
   integrated: readonly OrientationSample[],
   acceleration: readonly MotionSample[],
-  span: { readonly start: number; readonly end: number },
+  span: { readonly start: number; readonly count: number },
 ): Vector3[] {
-  const bins: [number, number, number][] = Array.from(
-    { length: Math.floor((span.end - span.start) / BIN) + 1 },
-    () => [0, 0, 0],
-  );
+  const bins: [number, number, number][] = Array.from({ length: span.count }, () => [0, 0, 0]);
   for (const sample of acceleration) {
     const bin = bins[Math.floor((sample.timestamp - span.start) / BIN)];
     const magnitude = Math.hypot(...sample.value);
