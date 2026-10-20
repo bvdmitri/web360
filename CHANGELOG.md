@@ -6,6 +6,17 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-20
+
+### Added
+
+- A documentation site, https://bvdmitri.github.io/web360/: a getting-started guide, examples
+  (rendering to MP4, a preview frame, split recordings, progress and cancelling, errors, a Web
+  Worker), the options and errors, the supported cameras, the file formats, the design decisions,
+  the roadmap and an API reference generated from the package's exports.
+- `RandomAccessSource`, the type `blobSource` returns, is exported.
+- Every version is released from one tag: npm (with provenance) and its GitHub Release together.
+
 ## [0.4.3] - 2026-10-20
 
 ### Changed
@@ -76,6 +87,7 @@ All notable changes to this project are documented here. The format follows
 - `Web360Error` codes for what stops a rendition: no WebGPU, no WebCodecs, an unsupported codec, a
   missing lens file, an unreadable recording, a decode failure.
 
+[0.5.0]: https://github.com/bvdmitri/web360/releases/tag/v0.5.0
 [0.4.3]: https://github.com/bvdmitri/web360/releases/tag/v0.4.3
 [0.4.2]: https://github.com/bvdmitri/web360/releases/tag/v0.4.2
 [0.4.1]: https://github.com/bvdmitri/web360/releases/tag/v0.4.1

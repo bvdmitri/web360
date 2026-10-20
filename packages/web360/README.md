@@ -14,8 +14,6 @@ renders stabilized equirectangular frames on the GPU: an Insta360's two lenses s
 cube map, which the camera stitched itself, read out. It hands you `VideoFrame`s; encoding, audio
 and storage stay with your application.
 
-<!-- #region guide -->
-
 ```ts
 import { openRendition, Web360Error } from '@bvdmitri/web360';
 
@@ -34,6 +32,8 @@ try {
   rendition.dispose();
 }
 ```
+
+<!-- #region guide -->
 
 ## Options
 

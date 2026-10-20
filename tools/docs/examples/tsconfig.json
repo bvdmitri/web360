@@ -1,0 +1,10 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["@webgpu/types"],
+    "noEmit": true,
+    "paths": { "@bvdmitri/web360": ["../../../packages/web360/src/index.ts"] }
+  },
+  "include": ["*.ts"]
+}

@@ -53,6 +53,7 @@ export default defineConfig({
   themeConfig: {
     nav: [
       { text: 'Guide', link: '/guide/getting-started' },
+      { text: 'Examples', link: '/guide/examples' },
       { text: 'API', link: '/api/' },
       { text: 'Formats', link: '/FORMAT-insta360' },
       { text: 'Decisions', link: '/adr/' },
@@ -65,6 +66,8 @@ export default defineConfig({
           text: 'Guide',
           items: [
             { text: 'Getting started', link: '/guide/getting-started' },
+            { text: 'Examples', link: '/guide/examples' },
+            { text: 'Options and errors', link: '/guide/options' },
             { text: 'Cameras', link: '/guide/cameras' },
             { text: 'Roadmap', link: '/roadmap' },
             { text: 'Releasing', link: '/guide/releasing' },

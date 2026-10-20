@@ -2,5 +2,13 @@
   "singleQuote": true,
   "printWidth": 100,
   "trailingComma": "all",
-  "proseWrap": "preserve"
+  "proseWrap": "preserve",
+  "overrides": [
+    {
+      "files": "tools/docs/examples/*.ts",
+      "options": {
+        "printWidth": 76
+      }
+    }
+  ]
 }
