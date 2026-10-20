@@ -106,8 +106,11 @@ src/stitch/preview` (add `WEB360_PREVIEW_TINT=1` or `WEB360_PREVIEW_ONLY=0|1` to
 - A recording opens from random-access sources, reading only headers, the `moov` and the trailer
   (ADR 0013); `rendition/` plans a span, the stabilized view and each frame's stitch (ADR 0014);
   `packages/adapters/webcodecs` decodes a lens video with WebCodecs; and `packages/web360` is the
-  published package, `openRendition` over a `Platform` (ADR 0015). Next: build and publish `web360`
-  0.1.0 (M6), the cutaway swap (M7), and quality from evaluation (M8+).
+  published package, `openRendition` over a `Platform` (ADR 0015).
+- `@bvdmitri/web360` 0.1.0 is on npm, and cutaway stitches its 360 uploads with it in place of
+  GyroView. Next: quality from the owner's evaluation (M8+), starting with the horizon right after
+  exit (the fused vertical while the body still accelerates), the seam line, and parallax on near
+  objects.
 
 ### Later
 
