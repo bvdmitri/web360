@@ -19,7 +19,7 @@ import { readInsta360Recording } from '../format/insta360/recording';
 import { readTrailer } from '../format/insta360/trailer';
 import type { CameraRecording, LensOptics } from '../model/recording';
 import { axisAlignments } from '../motion/axes';
-import { fuseOrientation } from '../motion/fusion';
+import { levelOrientation } from '../motion/level';
 import { rotationAt } from '../motion/interpolate';
 import type { OrientationSample } from '../motion/orientation';
 import {
@@ -257,7 +257,7 @@ const correctionsByMode = (
 const motionFor = (recording: CameraRecording): Motion | undefined => {
   const mode = setting('STAB');
   if (mode === undefined) return undefined;
-  const attitude = fuseOrientation(recording.angularVelocity, recording.acceleration);
+  const attitude = levelOrientation(recording.angularVelocity, recording.acceleration);
   const corrections = correctionsByMode(mode, attitude);
   const view = corrections.map((one, index) => ({
     timestamp: one.timestamp,
@@ -341,7 +341,10 @@ const turnBetween = (a: Quaternion, b: Quaternion): number => {
 };
 
 const scanMotion = (source: Source, outBase: string): void => {
-  const attitude = fuseOrientation(source.recording.angularVelocity, source.recording.acceleration);
+  const attitude = levelOrientation(
+    source.recording.angularVelocity,
+    source.recording.acceleration,
+  );
   const span = Number(setting('IMU_SPAN') ?? '2');
   const orientationAt = (time: number): Quaternion =>
     rotationAt(attitude, timeOf(source, time), (sample) => sample.orientation);
@@ -357,7 +360,10 @@ const searchImu = (source: Source, at: number, outBase: string): void => {
   const second = samplersAt(source, at + span, SEARCH.decode);
   const lenses = source.recording.lenses;
   const corrections = correctionsFor(lenses, first);
-  const attitude = fuseOrientation(source.recording.angularVelocity, source.recording.acceleration);
+  const attitude = levelOrientation(
+    source.recording.angularVelocity,
+    source.recording.acceleration,
+  );
   const orientationAt = (time: number): Quaternion =>
     rotationAt(attitude, timeOf(source, time), (sample) => sample.orientation);
   const reference = orientationAt(at);
@@ -418,7 +424,7 @@ const attitudeCache = new Map<Source, readonly OrientationSample[]>();
 const attitudeFor = (source: Source, motion: Motion | undefined): readonly OrientationSample[] => {
   const known = motion?.attitude ?? attitudeCache.get(source);
   if (known !== undefined) return known;
-  const fused = fuseOrientation(source.recording.angularVelocity, source.recording.acceleration);
+  const fused = levelOrientation(source.recording.angularVelocity, source.recording.acceleration);
   attitudeCache.set(source, fused);
   return fused;
 };
@@ -438,18 +444,15 @@ const shutterAt = (source: Source, motion: Motion | undefined, at: number): Shut
     : shutterFor(source, attitude, { at, option: parseShutter(text) });
 };
 
+// Rows read top to bottom (ADR 0011); which row the frame's timestamp marks is searched.
+const SHUTTER_REFERENCES = [0, 0.25, 0.5, 0.75, 1] as const;
 const SHUTTER_CANDIDATES: readonly (ShutterOption | undefined)[] = [
   undefined,
-  ...(['y', 'x'] as const).flatMap((axis) =>
-    (
-      [
-        [1, 1],
-        [-1, -1],
-        [1, -1],
-        [-1, 1],
-      ] as const
-    ).map((directions) => ({ axis, directions, reference: 0.5 })),
-  ),
+  ...SHUTTER_REFERENCES.map((reference) => ({
+    axis: 'y' as const,
+    directions: [1, 1] as const,
+    reference,
+  })),
 ];
 
 const searchShutter = (source: Source, at: number, outBase: string): void => {

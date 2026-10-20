@@ -28,6 +28,11 @@ but not which way the rows run or which row its frame timestamp marks.
   not stand out; in most windows the differences were within noise, and the strongest turn decided
   it.
 
+- **Rechecked on the levelled attitude (ADR 0016),** with the jitter of the earlier fused attitude
+  gone: over ten freefall moments, the row the frame's timestamp marks was searched at the first
+  row, a quarter, the middle, three quarters and the last; the first row or a quarter won seven,
+  the last row two, and the first row has the best sum. The first-row timing stands.
+
 ## Consequences
 
 - On a two-second canopy turn the correction made a world-locked view about 7 percent stiller frame

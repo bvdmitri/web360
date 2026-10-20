@@ -1,5 +1,5 @@
 import {
-  fuseOrientation,
+  levelOrientation,
   microseconds,
   openInsta360,
   planSpan,
@@ -112,7 +112,7 @@ function motionOf(
   options: RenditionOptions,
 ): Pick<OpenedRendition, 'attitude' | 'view'> {
   const { recording } = opened;
-  const attitude = fuseOrientation(recording.angularVelocity, recording.acceleration);
+  const attitude = levelOrientation(recording.angularVelocity, recording.acceleration);
   const view = viewOf(attitude, {
     stabilization: options.stabilization ?? DEFAULT_STABILIZATION,
     ...(options.smoothing !== undefined && { smoothing: options.smoothing }),

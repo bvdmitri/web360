@@ -27,6 +27,8 @@ export { MissingLensFileError, openInsta360 } from './format/insta360/open';
 export type { Insta360Files, Insta360Opened } from './format/insta360/open';
 export { NotInsta360Error } from './format/insta360/trailer';
 export { fuseOrientation } from './motion/fusion';
+export { levelOrientation } from './motion/level';
+export type { LevelOptions } from './motion/level';
 export type { OrientationSample } from './motion/orientation';
 export { estimateColour, imageSampler } from './stitch/colour';
 export type { ColourCorrection, ColourInput, LensPicture } from './stitch/colour';
