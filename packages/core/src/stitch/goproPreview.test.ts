@@ -1,10 +1,10 @@
 // Developer harness, skipped unless WEB360_GOPRO_PREVIEW names a GoPro .360 recording: renders one
 // moment of its cube map to an equirectangular PNG (needs ffmpeg), or runs one of the measurements
-// of ADR 0021. Settings:
+// of ADR 0021 and 0023. Settings:
 //   WEB360_GOPRO_PREVIEW=<file.360>  WEB360_GOPRO_OUT=<png, or the stem of a search's .json>
 //   WEB360_GOPRO_AT=<seconds>  WEB360_GOPRO_SCALE=<0..1, the decode size against the stored size>
 //   WEB360_GOPRO_STAB=<off|lock|horizon|smooth|follow>  stabilizes the still with the attitude
-//   WEB360_GOPRO_SEARCH=1  ranks readings of the camera's attitude, each with the 24 axis-aligned
+//   WEB360_GOPRO_SEARCH=1  ranks readings of the attitude a rendition uses, each with the 24 axis-aligned
 //     turns to the cube, by how still they hold the world between frames at the fastest moments
 //   WEB360_GOPRO_OFFSETS=<ms,ms,...>  ranks time offsets of the attitude against the picture alike
 //   WEB360_GOPRO_HORIZON=<s,s,...>  ranks the 24 turns by how level the horizon comes out under
@@ -139,7 +139,7 @@ const turnRate = (attitude: readonly OrientationSample[], time: number, step: nu
 
 // The fastest-turning moments, at least `spacing` seconds apart.
 const fastMoments = (harness: Harness): number[] => {
-  const attitude = harness.opened.recording.reportedAttitude?.attitude ?? [];
+  const attitude = attitudeOf(harness.opened.recording);
   const step = MICROS / harness.opened.recording.frameRate;
   const end = (attitude.at(-1)?.timestamp ?? 0) / MICROS - 1;
   const rated: { at: number; rate: number }[] = [];
@@ -203,7 +203,7 @@ const READINGS: Record<string, (q: Quaternion) => Quaternion> = {
 };
 
 const searchReadings = (harness: Harness): void => {
-  const attitude = harness.opened.recording.reportedAttitude?.attitude ?? [];
+  const attitude = attitudeOf(harness.opened.recording);
   const totals = new Map<string, number>();
   for (const at of fastMoments(harness)) {
     const pair = [at, at + SEARCH.gap].map((time) => framesAt(harness, time, SEARCH.scale));
@@ -224,30 +224,24 @@ const searchReadings = (harness: Harness): void => {
 
 const searchOffsets = (harness: Harness, offsets: readonly number[]): void => {
   const { recording: camera } = harness.opened;
-  const attitude = camera.reportedAttitude?.attitude ?? [];
+  const attitude = attitudeOf(camera);
   const totals = offsets.map(() => 0);
-  for (const at of fastMoments(harness)) {
+  const moments = setting('MOMENTS')?.split(',').map(Number) ?? fastMoments(harness);
+  const perMoment: { at: number; best: number }[] = [];
+  for (const at of moments) {
     const pair = [at, at + SEARCH.gap].map((time) => framesAt(harness, time, SEARCH.scale));
-    for (const [index, offset] of offsets.entries()) {
+    const scores = offsets.map((offset) => {
       const reading = (time: number): Quaternion =>
         orientationAt(attitude, time * MICROS + offset * MILLIS);
-      const score = lockStillness(harness, pair, {
-        at,
-        attitude: reading,
-        alignment: camera.imuToCamera,
-      });
-      totals[index] = (totals[index] ?? 0) + score;
-    }
+      return lockStillness(harness, pair, { at, attitude: reading, alignment: camera.imuToCamera });
+    });
+    for (const [index, score] of scores.entries()) totals[index] = (totals[index] ?? 0) + score;
+    const best = scores.indexOf(Math.max(...scores));
+    perMoment.push({ at, best: offsets[best] ?? 0 });
   }
   const ranking = offsets.map((offset, index) => ({ offset, score: totals[index] ?? 0 }));
-  writeFileSync(
-    `${harness.out}.json`,
-    JSON.stringify(
-      ranking.toSorted((a, b) => b.score - a.score),
-      undefined,
-      2,
-    ),
-  );
+  const report = { ranking: ranking.toSorted((a, b) => b.score - a.score), perMoment };
+  writeFileSync(`${harness.out}.json`, JSON.stringify(report, undefined, 2));
 };
 
 // Per column, the row of the sharpest bright-to-dark step in the middle half: the horizon. The

@@ -15,16 +15,19 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-// A device whose import of a frame fails the way headless Linux Chromium's does: the work it
-// submits never completes.
-const failingDevice = (spies: { writeTexture: Mock; destroy: Mock }): GPUDevice =>
+// A stand-in device. One whose import of a frame fails, the way headless Linux Chromium's does,
+// never completes the work it submits.
+const standInDevice = (
+  spies: { writeTexture: Mock; destroy: Mock; importExternalTexture?: Mock },
+  canImport = false,
+): GPUDevice =>
   ({
     createShaderModule: (): unknown => ({}),
     createSampler: (): unknown => ({}),
     createTexture: (): unknown => ({ format: 'rgba8unorm', createView: () => ({}) }),
     createRenderPipeline: () => ({ getBindGroupLayout: (): unknown => ({}) }),
     createBindGroup: (): unknown => ({}),
-    importExternalTexture: (): unknown => ({}),
+    importExternalTexture: spies.importExternalTexture ?? ((): unknown => ({})),
     createCommandEncoder: (): unknown => ({
       beginRenderPass: () => ({
         setPipeline: vi.fn(),
@@ -38,13 +41,18 @@ const failingDevice = (spies: { writeTexture: Mock; destroy: Mock }): GPUDevice 
       submit: vi.fn(),
       writeTexture: spies.writeTexture,
       onSubmittedWorkDone: () =>
-        Promise.reject(new Error('A valid external Instance reference no longer exists.')),
+        canImport
+          ? Promise.resolve()
+          : Promise.reject(new Error('A valid external Instance reference no longer exists.')),
     },
     lost: new Promise<never>(() => {
       // A lost device would settle this; this one only fails its work.
     }),
     destroy: spies.destroy,
   }) as unknown as GPUDevice;
+
+// WebGPU's usage flags, which Node does not define: the probe's texture asks for one.
+const TEXTURE_USAGE: unknown = Object.fromEntries([['RENDER_ATTACHMENT', 16]]);
 
 class Canvas {
   public getContext(): unknown {
@@ -155,8 +163,8 @@ describe('the browser platform', () => {
     it('checks once on a spare device, and copies frames on the CPU instead', async () => {
       const realSpies = { writeTexture: vi.fn(), destroy: vi.fn() };
       const spareSpies = { writeTexture: vi.fn(), destroy: vi.fn() };
-      const real = failingDevice(realSpies);
-      const spare = failingDevice(spareSpies);
+      const real = standInDevice(realSpies);
+      const spare = standInDevice(spareSpies);
       // Each adapter makes its own device: a failed import loses every adapter fetched before it,
       // so the device to render on must come from one fetched after the check.
       const adapters = [spare, real].map((device) => ({
@@ -166,6 +174,7 @@ describe('the browser platform', () => {
       vi.stubGlobal('navigator', { gpu: { requestAdapter } });
       vi.stubGlobal('OffscreenCanvas', Canvas);
       vi.stubGlobal('VideoFrame', Frame);
+      vi.stubGlobal('GPUTextureUsage', TEXTURE_USAGE);
       const platform = browserPlatform();
       const device = await platform.device();
       expect(device).toBe(real);
@@ -188,6 +197,43 @@ describe('the browser platform', () => {
         { bytesPerRow: 16 },
         [4, 2],
       );
+    });
+  });
+
+  describe('where a browser can import decoded frames', () => {
+    it('keeps importing them, after the check on a spare device', async () => {
+      const importExternalTexture = vi.fn(() => ({}));
+      const spies = { writeTexture: vi.fn(), destroy: vi.fn(), importExternalTexture };
+      const [spare, real] = [standInDevice(spies, true), standInDevice(spies)];
+      const adapters = [spare, real].map((device) => ({
+        requestDevice: (): Promise<GPUDevice> => Promise.resolve(device),
+      }));
+      vi.stubGlobal('navigator', {
+        gpu: { requestAdapter: () => Promise.resolve(adapters.shift()) },
+      });
+      vi.stubGlobal('OffscreenCanvas', Canvas);
+      vi.stubGlobal('VideoFrame', Frame);
+      vi.stubGlobal('GPUTextureUsage', TEXTURE_USAGE);
+      const platform = browserPlatform();
+      const device = await platform.device();
+      importExternalTexture.mockClear();
+      const texture = { format: 'rgba8unorm', createView: () => ({}) } as unknown as GPUTexture;
+      await platform.upload(device, {} as VideoFrame, texture);
+      expect(importExternalTexture).toHaveBeenCalledTimes(1);
+      expect(spies.writeTexture).not.toHaveBeenCalled();
+    });
+
+    it('takes a check that finds no spare adapter at its word', async () => {
+      const spies = { writeTexture: vi.fn(), destroy: vi.fn() };
+      const real = standInDevice(spies);
+      const adapters = [null, { requestDevice: (): Promise<GPUDevice> => Promise.resolve(real) }];
+      vi.stubGlobal('navigator', {
+        gpu: { requestAdapter: () => Promise.resolve(adapters.shift()) },
+      });
+      vi.stubGlobal('OffscreenCanvas', Canvas);
+      vi.stubGlobal('VideoFrame', Frame);
+      vi.stubGlobal('GPUTextureUsage', TEXTURE_USAGE);
+      await expect(browserPlatform().device()).resolves.toBe(real);
     });
   });
 });

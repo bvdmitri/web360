@@ -6,6 +6,14 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.4.2] - 2026-10-20
+
+### Changed
+
+- GoPro MAX2 and MAX recordings are steadier: they are stabilized by the camera's 800 Hz gyro,
+  levelled by the gravity it records, with the gyro's measured clock, instead of the once-a-frame
+  attitude a frame late.
+
 ## [0.4.1] - 2026-10-20
 
 ### Fixed

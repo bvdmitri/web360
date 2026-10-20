@@ -24,15 +24,13 @@ const still = (value: readonly [number, number, number]): MotionSample[] =>
   times.map((timestamp) => ({ timestamp, value }));
 
 describe('the attitude a rendition uses', () => {
-  it('levels the camera reported attitude by its own up readings when it reports one', () => {
+  it("integrates the gyro and levels it by the camera's own gravity readings, whatever their size", () => {
+    // Unit up readings, which the accelerometer's near-one-g weighting would all but ignore.
     const recording: CameraRecording = {
       ...base,
-      angularVelocity: still([0, 0, 5]),
-      acceleration: [],
-      reportedAttitude: {
-        attitude: times.map((timestamp) => ({ timestamp, orientation: identity() })),
-        up: still(bodyUp),
-      },
+      angularVelocity: still([0, 0, 0]),
+      acceleration: still([0, 0, 30]),
+      gravity: still(bodyUp),
     };
     const attitude = attitudeOf(recording);
     expect(attitude).toHaveLength(times.length);
@@ -40,7 +38,21 @@ describe('the attitude a rendition uses', () => {
     expect(levelledUp[2]).toBeCloseTo(1, 3);
   });
 
-  it('integrates and levels the gyro when the camera reports no attitude', () => {
+  it('follows the gyro from frame to frame when the camera writes its gravity', () => {
+    const recording: CameraRecording = {
+      ...base,
+      angularVelocity: still([0, 0, 1]),
+      acceleration: [],
+      gravity: still([0, 0, 1]),
+    };
+    const attitude = attitudeOf(recording);
+    const turned = rotate(attitude[20]!.orientation, [1, 0, 0]);
+    const start = rotate(attitude[0]!.orientation, [1, 0, 0]);
+    // A turn of one radian a second about up, for one second.
+    expect(Math.atan2(turned[1], turned[0]) - Math.atan2(start[1], start[0])).toBeCloseTo(1, 2);
+  });
+
+  it('levels the gyro by the accelerometer near one g when the camera writes no gravity', () => {
     const recording: CameraRecording = {
       ...base,
       angularVelocity: still([0, 0, 0]),

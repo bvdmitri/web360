@@ -1,6 +1,6 @@
 # ADR 0021: A GoPro is steered by its own attitude
 
-Status: accepted (2026-10-20)
+Status: accepted (2026-10-20); its attitude source and clock superseded by ADR 0023
 
 ## Context
 

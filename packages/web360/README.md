@@ -66,8 +66,9 @@ The Insta360 ONE R (5.7K 360 lens) is measured: its lens field of view, its IMU 
 rolling shutter come from real footage. Other Insta360 bodies open and stitch with the ONE R's
 values until footage from them sets their own.
 
-The GoPro MAX2 is measured: its cube-map layout, the alignment of its own attitude to the picture
-and its telemetry delay come from real footage, and it is stabilized by the attitude it records.
+The GoPro MAX2 is measured: its cube-map layout, the alignment of its gyro to the picture and its
+telemetry delay come from real footage, and it is stabilized by its gyro, levelled by the gravity it
+records.
 The original MAX opens with the MAX2's values until footage from it sets its own. A GoPro's 8K
 video needs a browser that decodes HEVC at that size.
 

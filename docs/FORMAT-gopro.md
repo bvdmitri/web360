@@ -67,16 +67,19 @@ last child. A payload covers about a second, and its samples are spaced evenly o
 duration on the track's media clock.
 
 - `DVNM`, in the `DEVC`: the camera's name (`MAX2` on the MAX2).
-- `GYRO` (rad/s), `ACCL` (m/s^2), `MAGN`: signed 16-bit triples over `SCAL`. `ORIN` names, per
+- `GYRO` (rad/s, 800 Hz on the MAX2), `ACCL` (m/s^2), `MAGN`: signed 16-bit triples over `SCAL`. `ORIN` names, per
   channel, the camera axis it measures, lower case meaning negated (`ZXY` on both bodies: Z, X, Y in
-  that order). The reader applies it, so motion samples are in the camera's X, Y, Z.
+  that order). The reader applies it, then turns the result onto the orientation frame's axes
+  (x, y, z to -x, -z, -y, measured on the MAX2, ADR 0023). Steered by the gyro, the picture shook
+  least with each frame matched to the gyro 10 ms after it.
 - `SHUT`: exposure time in seconds, 32-bit float, one per frame, no `SCAL`.
 - `CORI`, `IORI`: signed 16-bit quaternions over `SCAL` 32767, one per frame. `CORI` is the camera's
   orientation since the recording began, `IORI` the turn the camera applied to the image relative
   to its body. On the MAX2 `IORI` is a small turn about a single axis (a few degrees). The stored
   order is `w, x, y, z`. Measured on the MAX2 (ADR 0021): `CORI` is the world's turn to the body,
   in a frame of x right, y down, z forward; the cube's frame is that frame turned by
-  `{ w: 0.5, x: -0.5, y: 0.5, z: -0.5 }`; and the telemetry clock runs 30 ms behind the picture.
+  `{ w: 0.5, x: -0.5, y: 0.5, z: -0.5 }`. `CORI` is the gyro sampled once a frame (ADR 0023): its
+  turn rates match the gyro's to a scale of 1.000, about 5 ms ahead of it.
 - `GRAV`: the gravity direction, a signed 16-bit unit vector over `SCAL` 32767, one per frame, in
   the same body frame as `CORI` (measured on the MAX2). Negated, it is up.
 - Also present and not used: `WBAL`, `WRGB`, `ISOE`, `UNIF`, `PRJT`, `MNOR`, `OCNF`, `WNDM`, `MWET`,

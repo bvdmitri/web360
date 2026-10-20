@@ -14,6 +14,14 @@ const fixture = path.resolve(
 );
 const bytes = new Uint8Array(readFileSync(fixture));
 
+// The mean direction of a stream of vectors.
+const meanDirection = (samples: readonly { value: readonly number[] }[]): number[] => {
+  const sum = [0, 0, 0];
+  for (const { value } of samples) for (const axis of [0, 1, 2]) sum[axis]! += value[axis]!;
+  const length = Math.hypot(...sum);
+  return sum.map((value) => value / length);
+};
+
 describe('opening a GoPro recording', () => {
   it('reads both cube-map tracks as videos of the one file', async () => {
     const file = memorySource(bytes);
@@ -34,15 +42,19 @@ describe('opening a GoPro recording', () => {
     expect(recording.frameRate).toBeCloseTo(30_000 / 1001, 2);
     expect(recording.lenses).toEqual([]);
     expect(recording.angularVelocity.length).toBeGreaterThan(1000);
-    expect(recording.reportedAttitude?.attitude.length).toBeGreaterThan(1000);
-    expect(recording.reportedAttitude?.up).toHaveLength(
-      recording.reportedAttitude?.attitude.length ?? -1,
-    );
-    // A frame is shown 30 ms ahead of the telemetry describing it (measured on the MAX2).
-    expect(recording.captureClock).toBe(30_000);
+    // One gravity reading per frame.
+    expect(recording.gravity?.length).toBeGreaterThan(6000);
+    // A frame is shown 10 ms ahead of the gyro describing it (measured on the MAX2).
+    expect(recording.captureClock).toBe(10_000);
     // The orientation frame's forward axis (z) is the cube's front (+x).
     const forward = rotate(recording.imuToCamera, [0, 0, 1]);
     expect(forward.map((value) => Math.round(value))).toEqual([1, 0, 0]);
+  });
+
+  it("reads the motion on the axes of the camera's gravity: at rest they agree on up", async () => {
+    const { recording } = await openGoPro([memorySource(bytes)]);
+    const [a, g] = [meanDirection(recording.acceleration), meanDirection(recording.gravity ?? [])];
+    expect(a[0]! * g[0]! + a[1]! * g[1]! + a[2]! * g[2]!).toBeGreaterThan(0.9);
   });
 
   it('joins chapters into one recording, each frame naming its chapter', async () => {

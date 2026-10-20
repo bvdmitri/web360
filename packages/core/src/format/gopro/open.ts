@@ -1,8 +1,8 @@
-import type { AttitudeSample, CameraRecording, MotionSample } from '../../model/recording';
+import type { CameraRecording, MotionSample } from '../../model/recording';
 import type { EncodedVideo, OpenedRecording } from '../../model/video';
 import type { RandomAccessSource } from '../../ports/source';
 import { ByteReader } from '../../shared/binary/byteReader';
-import { conjugate, type Quaternion } from '../../shared/math/quaternion';
+import { rotate, type Quaternion } from '../../shared/math/quaternion';
 import { microseconds, seconds } from '../../shared/units/units';
 import { encodedVideosOf } from '../mp4/frames';
 import { readMovieFrom } from '../mp4/locate';
@@ -19,9 +19,13 @@ const TRACKS = 2;
 // forward, y left, z up. Found on MAX2 footage by locking a fast-turning view to the world with
 // each of the 24 axis-aligned rotations: this one held it stillest by far (ADR 0021).
 const ORIENTATION_TO_CUBE: Quaternion = { w: 0.5, x: -0.5, y: 0.5, z: -0.5 };
-// The telemetry runs this far behind the picture: on MAX2 footage the world held stillest with each
-// frame steered by the attitude 30 ms after it, a smooth peak a frame wide (ADR 0021).
-const CAPTURE_DELAY = 30_000;
+// The gyro and accelerometer axes (after ORIN) onto the orientation frame's: a half turn taking x, y,
+// z to -x, -z, -y. Found on MAX2 footage: the accelerometer agrees with GRAV on this turn alone, and
+// the gyro then matches CORI's turn rates to a scale of 1.000 and a twentieth of a degree (ADR 0023).
+const IMU_TO_ORIENTATION: Quaternion = { w: 0, x: 0, y: Math.SQRT1_2, z: -Math.SQRT1_2 };
+// The gyro runs this far behind the picture: on MAX2 footage the picture shook least from frame to
+// frame with each frame steered by the gyro 10 ms after it (ADR 0023).
+const CAPTURE_DELAY = 10_000;
 const CAPTURE_CLOCK = microseconds(CAPTURE_DELAY);
 
 /** Files that are not a GoPro 360 recording: no telemetry track, or not two cube-map tracks. */
@@ -54,9 +58,9 @@ interface Chapter {
  * @remarks A long recording is split into chapters (`GS01nnnn.360`, `GS02nnnn.360`, ...); they are
  * joined into one recording, each chapter's frames and motion shifted by the length of the chapters
  * before it, and every frame naming the chapter it is in. The picture is the equi-angular cube map
- * across the two video tracks (ADR 0020); the motion is the gyro and accelerometer on the camera's
- * axes, and the camera's own attitude (`CORI`, read as the body's turn to the world) with its gravity
- * as the up direction (`GRAV` negated), both in its orientation frame (ADR 0021). Throws
+ * across the two video tracks (ADR 0020); the motion is the gyro and accelerometer, turned onto the
+ * camera's orientation frame, with the camera's gravity as the up direction (`GRAV` negated) on the
+ * same axes, which `imuToCamera` turns onto the cube's (ADR 0021, ADR 0023). Throws
  * {@link NotGoProError} for files without a telemetry track or two video tracks.
  */
 export async function openGoPro(chapters: readonly RandomAccessSource[]): Promise<GoProOpened> {
@@ -149,36 +153,31 @@ function recordingOf(
     exposures: [],
     rollingShutter: seconds(0),
     captureClock: CAPTURE_CLOCK,
-    reportedAttitude: {
-      attitude: motion.flatMap((one) => one.attitude),
-      up: motion.flatMap((one) => one.up),
-    },
+    gravity: motion.flatMap((one) => one.gravity),
   };
 }
 
 interface ChapterMotion {
   readonly angularVelocity: MotionSample[];
   readonly acceleration: MotionSample[];
-  readonly attitude: AttitudeSample[];
-  readonly up: MotionSample[];
+  readonly gravity: MotionSample[];
 }
 
 function motionOf(chapter: Chapter): ChapterMotion {
   const { start } = chapter;
   const { reader, samples, timescale } = chapter.telemetry;
-  const shift = <T extends { readonly timestamp: number }>(sample: T): T => ({
+  const shift = (sample: MotionSample): MotionSample => ({
     ...sample,
     timestamp: microseconds(sample.timestamp + start),
   });
+  const onOrientation = (sample: MotionSample): MotionSample =>
+    shift({ ...sample, value: rotate(IMU_TO_ORIENTATION, sample.value) });
   const sensors = readMotion(reader, samples, timescale);
   const frames = readFrameOrientation(reader, samples, timescale);
   return {
-    angularVelocity: sensors.angularVelocity.map((sample) => shift(sample)),
-    acceleration: sensors.acceleration.map((sample) => shift(sample)),
-    attitude: frames.camera.map((sample) =>
-      shift({ ...sample, orientation: conjugate(sample.orientation) }),
-    ),
-    up: frames.gravity.map((sample) =>
+    angularVelocity: sensors.angularVelocity.map((sample) => onOrientation(sample)),
+    acceleration: sensors.acceleration.map((sample) => onOrientation(sample)),
+    gravity: frames.gravity.map((sample) =>
       shift({ ...sample, value: [-sample.value[0], -sample.value[1], -sample.value[2]] as const }),
     ),
   };
