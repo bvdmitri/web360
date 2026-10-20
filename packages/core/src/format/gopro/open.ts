@@ -19,9 +19,10 @@ const TRACKS = 2;
 // forward, y left, z up. Found on MAX2 footage by locking a fast-turning view to the world with
 // each of the 24 axis-aligned rotations: this one held it stillest by far (ADR 0021).
 const ORIENTATION_TO_CUBE: Quaternion = { w: 0.5, x: -0.5, y: 0.5, z: -0.5 };
-// The gyro and accelerometer axes (after ORIN) onto the orientation frame's: a half turn taking x, y,
-// z to -x, -z, -y. Found on MAX2 footage: the accelerometer agrees with GRAV on this turn alone, and
-// the gyro then matches CORI's turn rates to a scale of 1.000 and a twentieth of a degree (ADR 0023).
+// The gyro and accelerometer axes (after ORIN) onto the orientation frame's: a half turn taking x,
+// y, z to -x, -z, -y. Found on MAX2 footage: the accelerometer agrees with GRAV on this turn alone,
+// and the gyro then matches CORI's turn rates to a scale of 1.000 and a twentieth of a degree (ADR
+// 0023).
 const IMU_TO_ORIENTATION: Quaternion = { w: 0, x: 0, y: Math.SQRT1_2, z: -Math.SQRT1_2 };
 // The gyro runs this far behind the picture: on MAX2 footage the picture shook least from frame to
 // frame with each frame steered by the gyro 10 ms after it (ADR 0023).

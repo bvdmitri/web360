@@ -2,13 +2,13 @@
   "fixtures": {
     "insta360/oner-split-00.insv": {
       "origin": "An Insta360 ONE R with the 5.7K 360 lens module. The back-lens file (the _00_ of a split recording), which carries the trailer.",
-      "licence": "The owner's own recording, de-identified for use as a test fixture.",
+      "licence": "A recording made for this project, de-identified for use as a test fixture.",
       "covers": "The ISO base media container with three tracks (H.264 2880x2880 video, AAC audio, a timed-text metadata track) and the Insta360 contiguous trailer (info, gyro, exposure and smaller records). It is a structural extract: the picture is dropped, the thumbnails are zeroed and the serial is replaced, so it has no decodable frames and holds no faces."
     },
-    "gopro/max-eac.360": {
-      "origin": "A GoPro MAX recording its .360 (dual equiangular-cubemap HEVC, with a GPMF telemetry track).",
-      "licence": "The owner's own recording, de-identified for use as a test fixture.",
-      "covers": "The ISO base media container (two 5888x1920 EAC video tracks, audio, a timecode track and the GPMF telemetry track) and the GPMF data itself (accelerometer, gyroscope, orientation and exposure). It is a structural extract: only the GPMF samples are kept and their GPS stream is zeroed, with the video and audio samples dropped, so it has no frames, no sound and no location."
+    "gopro/max2-eac.360": {
+      "origin": "A GoPro MAX2 (firmware H24.02, 8K mode) recording its .360: two equi-angular cube-map HEVC tracks with a GPMF telemetry track.",
+      "licence": "A recording made for this project, de-identified for use as a test fixture.",
+      "covers": "The ISO base media container (two 5888x1920 cube-map video tracks, audio, a timecode track and the GPMF telemetry track) and the GPMF data itself (accelerometer, gyroscope, orientation, gravity and exposure). It is a structural extract: only the GPMF samples are kept, with the video and audio samples dropped, so it has no frames and no sound. Every record and box that identifies the camera, the recording or a person (CASN, CINF, MUID, CPID, CDAT, FACE, GPS5, GPS9, and the CAME, MUID and GUMI boxes) is zeroed by `scrubbed` in tools/checks/src/fixtures.ts, which the repository checks enforce."
     }
   }
 }

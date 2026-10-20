@@ -13,21 +13,27 @@ import { readbackPresenter, type Presenter } from './presenter';
  * supplies its own, which is how the rendition loop runs outside a browser.
  */
 export interface Platform {
+  /** How decoders and encoded chunks are made. */
   readonly codecs: Codecs;
   /** Throws a `Web360Error` when the video cannot be decoded here. */
   ensureDecodable(video: EncodedVideo): Promise<void>;
   /** A GPU device; throws a `Web360Error` when there is none. */
   device(): Promise<GPUDevice>;
+  /** What the rendered frames are drawn into and handed out from, at the output size. */
   presenter(
     device: GPUDevice,
     size: { readonly width: number; readonly height: number },
   ): Presenter;
   /** Copies a decoded frame onto a texture; done once a returned promise settles. */
   upload(device: GPUDevice, frame: VideoFrame, texture: GPUTexture): void | Promise<void>;
+  /** A decoded frame drawn small and square, for measuring the lenses' colour. */
   picture(frame: VideoFrame, size: number): LensPicture;
 }
 
-/** The browser as a {@link Platform}: WebCodecs to decode, WebGPU to stitch, `OffscreenCanvas` to present. */
+/**
+ * The browser as a {@link Platform}: WebCodecs to decode, WebGPU to render, frames read back from
+ * the GPU to hand out, and an `OffscreenCanvas` for the small colour pictures.
+ */
 export function browserPlatform(): Platform {
   return {
     codecs: browserCodecs(),

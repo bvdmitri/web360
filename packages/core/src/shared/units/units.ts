@@ -9,9 +9,13 @@ declare const unit: unique symbol;
  */
 export type Quantity<Unit extends string> = number & { readonly [unit]: Unit };
 
+/** An angle in degrees, as calibrations and fields of view are stated. */
 export type Degrees = Quantity<'degrees'>;
+/** An angle in radians, as the maths works in. */
 export type Radians = Quantity<'radians'>;
+/** A duration or a time in seconds. */
 export type Seconds = Quantity<'seconds'>;
+/** A time in microseconds, as media clocks and motion timestamps are kept. */
 export type Microseconds = Quantity<'microseconds'>;
 
 const DEGREES_PER_HALF_TURN = 180;
@@ -22,17 +26,24 @@ function finite<Unit extends string>(value: number, name: Unit): Quantity<Unit> 
   return value as Quantity<Unit>;
 }
 
+/**
+ * A number tagged with its unit: `degrees`, `radians`, `seconds` and `microseconds` throw a
+ * `RangeError` for a value that is not finite, so a unit never carries `NaN` or an infinity.
+ */
 export const degrees = (value: number): Degrees => finite(value, 'degrees');
 export const radians = (value: number): Radians => finite(value, 'radians');
 export const seconds = (value: number): Seconds => finite(value, 'seconds');
 export const microseconds = (value: number): Microseconds => finite(value, 'microseconds');
 
+/** Degrees to radians. */
 export const degreesToRadians = (value: Degrees): Radians =>
   radians((value * Math.PI) / DEGREES_PER_HALF_TURN);
 
+/** Radians to degrees. */
 export const radiansToDegrees = (value: Radians): Degrees =>
   degrees((value * DEGREES_PER_HALF_TURN) / Math.PI);
 
+/** Microseconds to seconds. */
 export const microsecondsToSeconds = (value: Microseconds): Seconds =>
   seconds(value / MICROSECONDS_PER_SECOND);
 

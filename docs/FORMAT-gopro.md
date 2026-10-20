@@ -1,8 +1,10 @@
 # GoPro 360 (`.360`)
 
-Facts about the files the GoPro MAX and MAX2 write, verified on the committed MAX fixture
-(`test/fixtures/gopro/max-eac.360`, structure and telemetry only) and on a private MAX2 recording
-(firmware H24.02, 8K mode). A fact verified on one body only says so. Public references used for
+Facts about the files the GoPro MAX and MAX2 write, verified on the committed MAX2 fixture
+(`test/fixtures/gopro/max2-eac.360`, firmware H24.02, 8K mode, structure and telemetry only) and on
+full MAX2 recordings. The original MAX has no fixture: its facts come from the public references
+below and are provisional until a recording of it is measured. A fact verified on one body only
+says so. Public references used for
 orientation: GoPro's GPMF specification (github.com/gopro/gpmf-parser, Apache-2.0 or MIT) and the
 MAX geometry published with max2sphere (Apache-2.0).
 
@@ -67,11 +69,11 @@ last child. A payload covers about a second, and its samples are spaced evenly o
 duration on the track's media clock.
 
 - `DVNM`, in the `DEVC`: the camera's name (`MAX2` on the MAX2).
-- `GYRO` (rad/s, 800 Hz on the MAX2), `ACCL` (m/s^2), `MAGN`: signed 16-bit triples over `SCAL`. `ORIN` names, per
-  channel, the camera axis it measures, lower case meaning negated (`ZXY` on both bodies: Z, X, Y in
-  that order). The reader applies it, then turns the result onto the orientation frame's axes
-  (x, y, z to -x, -z, -y, measured on the MAX2, ADR 0023). Steered by the gyro, the picture shook
-  least with each frame matched to the gyro 10 ms after it.
+- `GYRO` (rad/s, 800 Hz on the MAX2), `ACCL` (m/s^2), `MAGN`: signed 16-bit triples over `SCAL`.
+  `ORIN` names, per channel, the camera axis it measures, lower case meaning negated (`ZXY` on both
+  bodies: Z, X, Y in that order). The reader applies it, then turns the result onto the orientation
+  frame's axes (x, y, z to -x, -z, -y, measured on the MAX2, ADR 0023). Steered by the gyro, the
+  picture shook least with each frame matched to the gyro 10 ms after it.
 - `SHUT`: exposure time in seconds, 32-bit float, one per frame, no `SCAL`.
 - `CORI`, `IORI`: signed 16-bit quaternions over `SCAL` 32767, one per frame. `CORI` is the camera's
   orientation since the recording began, `IORI` the turn the camera applied to the image relative
@@ -82,12 +84,24 @@ duration on the track's media clock.
   turn rates match the gyro's to a scale of 1.000, about 5 ms ahead of it.
 - `GRAV`: the gravity direction, a signed 16-bit unit vector over `SCAL` 32767, one per frame, in
   the same body frame as `CORI` (measured on the MAX2). Negated, it is up.
-- Also present and not used: `WBAL`, `WRGB`, `ISOE`, `UNIF`, `PRJT`, `MNOR`, `OCNF`, `WNDM`, `MWET`,
-  `AALP`, `MSKP`, `LSKP`, `CSCT`, `CSCB`, `LRVO`, `LRVS`, `TMPC`. **`GPS9` / `GPSA` / `LVGP`
-  (location) and `FACE` (detected face boxes) are personal data**: a fixture zeroes them.
+- Also present and not used: `WBAL`, `WRGB`, `ISOE`, `UNIF`, `PRJT`, `MNOR`, `OCNF`, `WNDM`,
+  `MWET`, `AALP`, `MSKP`, `LSKP`, `CSCT`, `CSCB`, `LRVO`, `LRVS`, `TMPC`. Of the camera's attitude
+  streams only `GRAV` is read for a rendition; `CORI` and `IORI` are decoded for the measurement
+  harnesses.
+- **Personal data**, which a fixture holds only as zeros (`tools/checks/src/fixtures.ts`): `GPS5` /
+  `GPS9` (location), `FACE` (detected face boxes), and in the settings block of the `moov/udta`
+  `GPMF` box `CASN` (the camera's serial), `CINF`, `MUID` and `CPID` (camera and media IDs) and
+  `CDAT` (the creation time). `FIRM`/`FMWR` (firmware) and `MINF` (the model) identify the model
+  only and stay.
+
+## Metadata boxes
+
+Besides the `GPMF` box, `moov/udta` holds the camera's own boxes: `FIRM` (firmware), `LENS`, `SETT`,
+`HMMT`, `BCID`, and three that identify the camera or the recording, `CAME`, `MUID` and `GUMI`,
+which a fixture zeroes too.
 
 ## Files
 
 A recording longer than about 4 GB is split into chapters named `GS<chapter><number>.360`: two
-digits of chapter, then the recording's four-digit number. `.LRV` files beside them are
-low-resolution proxies.
+digits of chapter, then the recording's four-digit number. `.LRV` files beside them (also named
+`GL...`) are low-resolution proxies and `.THM` files thumbnails.

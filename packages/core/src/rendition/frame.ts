@@ -32,8 +32,8 @@ export interface RenditionContext {
  * @remarks The frame's moment on the motion clock is the capture clock plus `time` (ADR 0010). The
  * output is rotated by the view at that moment into the lens frame (`outputToCamera`), each row is
  * corrected for the turn made during readout (ADR 0011) with the readout down the canvas rows, and
- * the colour corrections are carried as given. The output is twice as wide as it is tall, the height
- * rounded to an even number of rows as encoders expect.
+ * the colour corrections are carried as given. The output is twice as wide as it is tall, the
+ * height rounded to an even number of rows as encoders expect.
  */
 export function frameAt(context: RenditionContext, time: Microseconds): StitchFrame {
   const { recording, canvas, images } = context.opened;

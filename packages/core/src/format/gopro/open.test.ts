@@ -10,7 +10,7 @@ import { NotGoProError, openGoPro } from './open';
 
 const fixture = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  '../../../../../test/fixtures/gopro/max-eac.360',
+  '../../../../../test/fixtures/gopro/max2-eac.360',
 );
 const bytes = new Uint8Array(readFileSync(fixture));
 

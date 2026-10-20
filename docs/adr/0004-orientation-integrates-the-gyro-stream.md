@@ -34,4 +34,4 @@ should not each re-decide.
 - Pure gyro integration drifts over time; a recording long enough for drift to matter is corrected
   by a later mode, not by changing this integrator.
 - Attitude is sampled on the gyro clock, so a consumer that needs it at a frame's time interpolates
-  between samples (a slerp the quaternion primitive will grow when a consumer needs it).
+  between samples (`quaternion.slerp`).

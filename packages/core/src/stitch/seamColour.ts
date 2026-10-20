@@ -70,8 +70,8 @@ export function seamPosition(
 }
 
 /**
- * What to add to a lens's colour at a seam position: each lens moved halfway toward the other at the
- * seam, the share fading as `cos^2` to nothing at `width` either side.
+ * What to add to a lens's colour at a seam position: each lens moved halfway toward the other at
+ * the seam, the share fading as `cos^2` to nothing at `width` either side.
  */
 export function seamShift(
   seam: SeamColour,
@@ -96,10 +96,10 @@ export function seamShift(
  * by five offsets within two degrees of the seam), saturated and black samples left out, and the
  * difference is that of the patch's average colours, so texture registered a pixel apart cancels.
  * Where the patch's colour varies very differently in the two lenses, they are seeing different
- * things there (a jumper or a helmet on the seam, through parallax) and the direction is not
- * trusted; its value is
- * filled in from the trusted ones either side. The result is smoothed around the ring and limited,
- * so one bad patch cannot paint the sky. A camera with other than two lenses gets no correction.
+ * things there (a person or object close to the camera on the seam, through parallax) and the
+ * direction is not trusted; its value is filled in from the trusted ones either side. The result is
+ * smoothed around the ring and limited, so one bad patch cannot paint the sky. A camera with other
+ * than two lenses gets no correction.
  */
 export function estimateSeamColour(
   lenses: readonly LensOptics[],
@@ -173,8 +173,9 @@ function isUsable(colour: Rgb): boolean {
 }
 
 // The patch's colour in the second lens over the first, compared as averages so that texture the
-// lenses register a pixel apart cancels out; a patch whose colour varies very differently in
-// the two lenses holds different things in them (a jumper or a helmet in one) and is not trusted.
+// lenses register a pixel apart cancels out; a patch whose colour varies very differently in the
+// two lenses holds different things in them (something close to the camera in one) and is not
+// trusted.
 function trusted(pairs: readonly Pair[]): Rgb | undefined {
   if (pairs.length < MIN_SAMPLES) return undefined;
   const first = pairs.map((pair) => pair.first);

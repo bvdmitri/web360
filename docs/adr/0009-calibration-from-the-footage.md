@@ -28,9 +28,9 @@ answer: where two lenses see the same far-away scene, the right parameters make 
 
 ## Consequences
 
-- On real footage the refinement is not yet stable: the back lens's yaw varied by several degrees
-  between freefall frames. The camera is helmet-mounted, and the wearer's helmet sits on the seam in
-  every frame, inches from the lenses; its parallax pulls the pose toward a compromise, and clouds
+- On ONE R footage the refinement is not stable: the back lens's yaw varies by several degrees
+  between freefall frames. The camera's mount sits on the seam in every frame, a few centimetres
+  from the lenses; its parallax pulls the pose toward a compromise, and clouds
   and the sun add content-dependent optima. It stays a tool, run from the preview harness
   (`WEB360_PREVIEW_REFINE`), not a default.
 - Making it a default needs two things: excluding the rig, which is detectable because it never

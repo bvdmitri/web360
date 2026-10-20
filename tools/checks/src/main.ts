@@ -3,6 +3,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 
 import { privateTerms } from './catalogue.ts';
+import { fixtureProblems } from './fixtures.ts';
 import { findProblems, type Problem } from './rules.ts';
 
 const git = (...gitArguments: string[]): string =>
@@ -24,6 +25,17 @@ function trackedFiles(isStaged: boolean): { path: string; text: string }[] {
     .filter(({ text }) => !isBinary(text));
 }
 
+// GoPro fixtures are read from the working tree, where Git LFS has put their bytes.
+function fixtureFindings(isStaged: boolean): Problem[] {
+  const paths = isStaged
+    ? git('diff', '--cached', '--name-only', '--diff-filter=ACMR')
+    : git('ls-files');
+  return paths
+    .split('\n')
+    .filter((path) => path.endsWith('.360') && existsSync(path))
+    .flatMap((path) => fixtureProblems(path, new Uint8Array(readFileSync(path))));
+}
+
 function problems(mode: string | undefined, argument: string | undefined): Problem[] {
   const catalogue = 'samples/catalogue.json';
   const terms = privateTerms(existsSync(catalogue) ? readFileSync(catalogue, 'utf8') : undefined);
@@ -31,7 +43,10 @@ function problems(mode: string | undefined, argument: string | undefined): Probl
     return findProblems('commit message', readFileSync(argument, 'utf8'), terms);
   }
   if (mode === '--staged' || mode === '--all') {
-    return trackedFiles(mode === '--staged').flatMap((f) => findProblems(f.path, f.text, terms));
+    const texts = trackedFiles(mode === '--staged').flatMap((f) =>
+      findProblems(f.path, f.text, terms),
+    );
+    return [...texts, ...fixtureFindings(mode === '--staged')];
   }
   throw new Error('usage: main.ts --staged | --all | --message <file>');
 }

@@ -33,9 +33,9 @@ export function estimateVignetting(
 /**
  * Wraps each lens's sampler so it undoes the lens's own falloff toward its rim.
  *
- * @remarks The correction depends only on how far a pixel sits from its lens centre, so it is applied
- * to the lens image before anything else; exposure is then matched on the flattened lenses. A lens
- * with no stated `vignetting` is read as recorded, and a lens without a sampler reads black.
+ * @remarks The correction depends only on how far a pixel sits from its lens centre, so it is
+ * applied to the lens image before anything else; exposure is then matched on the flattened lenses.
+ * A lens with no stated `vignetting` is read as recorded, and a lens without a sampler reads black.
  */
 export function devignette(
   lenses: readonly LensOptics[],

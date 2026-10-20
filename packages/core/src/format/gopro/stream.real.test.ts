@@ -12,7 +12,7 @@ import { readStream, type GpmfStream } from './stream';
 
 const fixture = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  '../../../../../test/fixtures/gopro/max-eac.360',
+  '../../../../../test/fixtures/gopro/max2-eac.360',
 );
 
 const streamByLeaf = (leafKey: string): GpmfStream => {

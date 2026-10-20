@@ -21,10 +21,15 @@ the check.
 ## Committed fixtures
 
 Test fixtures live in `test/fixtures/`, stored with Git LFS (`.gitattributes`). Each is either
-built synthetically by `tools/fixtures`, or derived from a real recording so that it keeps no
-faces or identifying details. A derived fixture is one of two kinds: a short clip cut losslessly,
-or a structural extract that keeps a recording's container and metadata but drops the picture
-entirely (so it has no frames and no faces), with any identifying content removed: an embedded
-thumbnail zeroed, a camera serial replaced, a GPS track zeroed. Every fixture has an entry in
-`test/fixtures/manifest.json` naming its origin, its
-licence and what it covers.
+built synthetically in its test, or derived from a real recording so that it keeps no faces or
+identifying details. A derived fixture is a structural extract: it keeps a recording's container
+and metadata but drops the picture entirely (so it has no frames and no faces), with any
+identifying content removed: an embedded thumbnail zeroed, a camera serial replaced, a GPS track
+zeroed. Every fixture has an entry in `test/fixtures/manifest.json` naming its origin, its licence
+and what it covers.
+
+A GoPro fixture is de-identified by `scrubbed` (`tools/checks/src/fixtures.ts`), which zeroes every
+GPMF record and metadata box that names the camera, the recording or a person (the serial, the
+camera and media IDs, the creation date, detected faces and GPS), keeping the file's layout. The
+repository checks run the same scan over every committed `.360` and refuse one that still holds
+any of them.

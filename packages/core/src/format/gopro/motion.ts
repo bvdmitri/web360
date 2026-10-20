@@ -66,6 +66,9 @@ function collect(reader: ByteReader, strm: KlvNode | undefined, window: Window):
  * A GoPro recording's per-frame orientation as the camera reports it: its own attitude (`CORI`),
  * the turn it applied to the image relative to the body (`IORI`), and the gravity direction
  * (`GRAV`), each on the media clock.
+ *
+ * @remarks A rendition reads only `gravity`, to level the integrated gyro (ADR 0023); `camera` and
+ * `image` are decoded for the measurement harnesses that compare them with the gyro.
  */
 export interface GoproOrientation {
   readonly camera: OrientationSample[];

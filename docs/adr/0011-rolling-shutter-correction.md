@@ -40,5 +40,5 @@ but not which way the rows run or which row its frame timestamp marks.
 - The evidence is modest. A recording with sustained fast rotation over textured, distant scenery,
   or Insta360's own statement of the readout, would settle the order more firmly; the builder keeps
   the order in one place so it can change.
-- It costs a second projection per lens per output pixel, which the GPU shader will pay the same
-  way.
+- It costs a second projection per lens per output pixel, which the GPU shader pays the same way
+  (ADR 0012).

@@ -137,7 +137,8 @@ const eliminate = (row: number[], lead: readonly number[], pivot: number): void 
   for (let column = 0; column <= UNKNOWNS; column += 1) row[column]! -= factor * lead[column]!;
 };
 
-// Least squares for c ~ s (g + t x g): the scale s and the small turn t (radians) from gyro to CORI.
+// Least squares for c ~ s (g + t x g): the scale s and the small turn t (radians) from gyro to
+// CORI.
 const fitTurnAndScale = (pairs: readonly RatePair[]): { scale: number; turn: Vector3 } => {
   // Unknowns s and u = s t: c = s g + u x g = s g - [g]x u, each pair three rows.
   const normal = Array.from({ length: UNKNOWNS }, () => [0, 0, 0, 0, 0]);

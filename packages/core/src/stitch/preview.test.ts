@@ -46,13 +46,13 @@ import { devignette, estimateVignetting } from './vignetting';
 // of a real Insta360 split recording. It decodes lens frames with ffmpeg, CPU-stitches them, and
 // writes the result with ffmpeg for eyeballing, to WEB360_PREVIEW_OUT (or the temp directory).
 //
-//   WEB360_PREVIEW_AT=<s>        video time to stitch (default 0)
-//   WEB360_PREVIEW_STAB=<mode>   stabilize: off | lock | horizon | smooth (unset: raw camera frame)
-//   WEB360_PREVIEW_IMU=<n>       which of the 24 axis alignments maps the IMU to the lenses
-//   WEB360_PREVIEW_IMU_SEARCH=1  rank the 24 alignments by how still a locked view stays
-//   WEB360_PREVIEW_CLIP=<n>      render n consecutive frames as an MP4 instead of one PNG
-//   WEB360_PREVIEW_ONLY=0|1, WEB360_PREVIEW_TINT=1, WEB360_PREVIEW_FOV=<deg>,
-//   WEB360_PREVIEW_SWEEP=1, WEB360_PREVIEW_REFINE=1, WEB360_PREVIEW_GAIN=0, WEB360_PREVIEW_VIGNETTE=0
+// WEB360_PREVIEW_AT=<s>        video time to stitch (default 0) WEB360_PREVIEW_STAB=<mode>
+// stabilize: off | lock | horizon | smooth (unset: raw camera frame) WEB360_PREVIEW_IMU=<n>
+// which of the 24 axis alignments maps the IMU to the lenses WEB360_PREVIEW_IMU_SEARCH=1  rank the
+// 24 alignments by how still a locked view stays WEB360_PREVIEW_CLIP=<n>      render n consecutive
+// frames as an MP4 instead of one PNG WEB360_PREVIEW_ONLY=0|1, WEB360_PREVIEW_TINT=1,
+// WEB360_PREVIEW_FOV=<deg>, WEB360_PREVIEW_SWEEP=1, WEB360_PREVIEW_REFINE=1, WEB360_PREVIEW_GAIN=0,
+// WEB360_PREVIEW_VIGNETTE=0
 const footage = process.env['WEB360_PREVIEW_INSV'];
 const setting = (name: string): string | undefined => process.env[`WEB360_PREVIEW_${name}`];
 

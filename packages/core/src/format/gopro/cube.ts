@@ -29,7 +29,8 @@ const TRACKS: readonly (readonly {
 ];
 
 /**
- * The equi-angular cube map a GoPro MAX or MAX2 stores across its two video tracks, from their size.
+ * The equi-angular cube map a GoPro MAX or MAX2 stores across its two video tracks, from their
+ * size.
  *
  * @remarks A face is as tall as the track. The first and last face of each track carry the camera's
  * seam between its lenses, with a duplicated band of `(width - 3 * height) / 2` columns, so the

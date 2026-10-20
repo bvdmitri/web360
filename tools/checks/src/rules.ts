@@ -2,7 +2,7 @@
 export interface Problem {
   readonly path: string;
   readonly line: number;
-  readonly rule: 'dash' | 'private-sample';
+  readonly rule: 'dash' | 'private-sample' | 'personal-data';
   readonly detail: string;
 }
 

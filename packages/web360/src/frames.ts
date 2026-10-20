@@ -39,10 +39,9 @@ interface LensStream {
  * core's stitch for the moment is packed and rendered, and the presented frame is yielded with its
  * time from the span's start. A camera that stores a cube map it stitched itself (a GoPro) is
  * rendered from its cube instead, with no colour work. Otherwise, with colour matching on (the
- * default), the lenses' vignetting and gains
- * are estimated on the first frame and every thirtieth after it, blended into the running correction
- * so exposure follows the scene without flicker. Ending early or failing releases every decoder,
- * texture and frame held.
+ * default), the lenses' gains and the seam colour field are estimated on the first frame and every
+ * thirtieth after it, blended into the running correction so exposure follows the scene without
+ * flicker. Ending early or failing releases every decoder, texture and frame held.
  */
 export async function* renderFrames(
   rendition: OpenedRendition,

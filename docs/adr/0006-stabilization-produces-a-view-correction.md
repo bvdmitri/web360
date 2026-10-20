@@ -15,8 +15,8 @@ the modes differ only in what of the camera's motion they keep.
   and the stabilized view a renderer shows is `correction ⊗ cameraAttitude`. A renderer rotates
   the sphere by the correction to reach that view. One shape, so modes are interchangeable.
 - **Lock to world** cancels all of the camera's rotation: the correction maps every attitude back
-  onto the first sample's, so the view holds a fixed world frame, heading included. It is the
-  default.
+  onto the first sample's, so the view holds a fixed world frame, heading included. (A rendition
+  defaults to `smooth`, ADR 0015.)
 - **Horizon leveling** keeps the heading and removes the tilt. The attitude is split about the
   world vertical by a swing-twist decomposition into a heading (the rotation about the vertical)
   and a tilt (the remainder); the correction keeps the heading and cancels the tilt, so the

@@ -24,8 +24,9 @@ export interface Orientation {
 export type LensProjection = 'equidistant';
 
 /**
- * A lens's falloff toward its rim: brightness drops by `exp(-strength * (reach^2 - start^2))` beyond
- * `start` (in reach, the pixel's distance from the centre over the radius), and not at all inside.
+ * A lens's falloff toward its rim: brightness drops by `exp(-strength * (reach^2 - start^2))`
+ * beyond `start` (in reach, the pixel's distance from the centre over the radius), and not at all
+ * inside.
  */
 export interface Vignetting {
   readonly strength: number;
@@ -36,11 +37,11 @@ export interface Vignetting {
  * One lens's optics in the calibration canvas: its projection, scale, coverage, centre and pose.
  *
  * @remarks Two angles describe the lens, and they differ. `fieldOfView` is the mapping: the full
- * angle that reaches `radius` pixels from the centre, so the equidistant focal length is
- * `radius / (fieldOfView / 2)`. `coverage` is how much of the sphere the lens is trusted to image:
- * the image usually extends past `radius`, and the overlap between lenses lives in that extension,
- * so `coverage` is normally the larger. Neither is in the v1 calibration; the reader supplies both
- * for the camera model (ADR 0007). `vignetting` is the falloff the lens records with toward its rim,
+ * angle that reaches `radius` pixels from the centre, so the equidistant focal length is `radius /
+ * (fieldOfView / 2)`. `coverage` is how much of the sphere the lens is trusted to image: the image
+ * usually extends past `radius`, and the overlap between lenses lives in that extension, so
+ * `coverage` is normally the larger. Neither is in the v1 calibration; the reader supplies both for
+ * the camera model (ADR 0007). `vignetting` is the falloff the lens records with toward its rim,
  * measured per camera model (ADR 0017); without it the lens is taken as evenly lit.
  */
 export interface LensOptics {
@@ -94,8 +95,9 @@ export interface FrameExposure {
  *
  * @remarks Every vendor reader fills this one shape, and every computation over a recording reads
  * it without knowing the vendor. It is telemetry, optics and timing, not pixels: a frame's bytes
- * are decoded through a port at processing time, not held here. `captureClock` is the first
- * frame's timestamp, the origin the motion and exposure timestamps share.
+ * are decoded through a port at processing time, not held here. `captureClock` is where the first
+ * frame falls on the clock the motion and exposure timestamps share: an Insta360's first frame
+ * timestamp, a GoPro's measured delay of its telemetry behind the picture.
  *
  * `angularVelocity` (rad/s) and `acceleration` (m/s^2) are separate streams on that clock, each at
  * its sensor's own rate, in the IMU's axes. `imuToCamera` turns those axes into the frame the lens

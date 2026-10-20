@@ -31,14 +31,14 @@ interface Pair {
  * @remarks Each direction in `band` that both lenses see is sampled in each, and the two series of
  * log brightness are correlated. Exposure (a constant log offset) and contrast (a log scale) do not
  * change it; content landing in different places in the two lenses, from a wrong field of view or
- * pose, lowers it. The band is fixed rather than the whole overlap so candidates are compared on the
- * same directions, and the correlation is scaled by the share of the band both lenses actually saw,
- * so parameters that push part of the band out of a lens's coverage cannot score better by dropping
- * the directions that disagreed. It is meant to rank stitch parameters on one frame (higher is
- * better registered), not as an absolute score; parallax from anything close to the camera lowers it
- * whatever the parameters. With nothing to correlate (no shared directions, no light, or a
- * featureless band) it is 0. The band should sit on the seam, so the lenses' optical axes should be
- * near the output's poles.
+ * pose, lowers it. The band is fixed rather than the whole overlap so candidates are compared on
+ * the same directions, and the correlation is scaled by the share of the band both lenses actually
+ * saw, so parameters that push part of the band out of a lens's coverage cannot score better by
+ * dropping the directions that disagreed. It is meant to rank stitch parameters on one frame
+ * (higher is better registered), not as an absolute score; parallax from anything close to the
+ * camera lowers it whatever the parameters. With nothing to correlate (no shared directions, no
+ * light, or a featureless band) it is 0. The band should sit on the seam, so the lenses' optical
+ * axes should be near the output's poles.
  */
 export function seamCorrelation(
   lenses: readonly LensOptics[],

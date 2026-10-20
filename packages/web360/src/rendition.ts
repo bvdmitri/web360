@@ -5,6 +5,7 @@ import {
   openGoPro,
   openInsta360,
   planSpan,
+  seconds,
   viewOf,
   type Span,
   type Stabilization,
@@ -48,8 +49,8 @@ export interface RenditionMetadata {
 /**
  * A recording opened for rendering one span of it.
  *
- * @remarks `frames()` yields the stitched frames of the span in order, timed in microseconds from the
- * span's start; the caller closes each. `duration` is the span's length in seconds. `dispose`
+ * @remarks `frames()` yields the stitched frames of the span in order, timed in microseconds from
+ * the span's start; the caller closes each. `duration` is the span's length in seconds. `dispose`
  * releases the GPU device; frames already yielded stay valid until closed.
  */
 export interface Rendition {
@@ -63,10 +64,11 @@ export interface Rendition {
  * Opens a recording for rendering a span of it as stitched, stabilized equirectangular frames.
  *
  * @remarks It reads the recording's trailer or telemetry and its movies (not its media), checks the
- * browser can decode its video and has a WebGPU device, takes the camera's attitude (its own when it
- * writes one, ADR 0021, else the motion fused) and plans the span;
- * decoding and stitching wait for `frames()`. Failures throw a `Web360Error` whose code says why
- * (a missing second file, an unreadable recording, no WebGPU, no WebCodecs, an unsupported codec).
+ * browser can decode its video and has a WebGPU device, integrates the gyro into the camera's
+ * attitude, levelled by the camera's own gravity readings when it writes them and otherwise by the
+ * accelerometer (ADR 0016, ADR 0023), and plans the span; decoding and rendering wait for
+ * `frames()`. Failures throw a `Web360Error` whose code says why (a missing second file, an
+ * unreadable recording, no WebGPU, no WebCodecs, an unsupported codec).
  */
 export async function openRendition(
   source: RenditionSource,
@@ -124,7 +126,7 @@ function motionOf(
   const attitude = attitudeOf(opened.recording);
   const view = viewOf(attitude, {
     stabilization: options.stabilization ?? DEFAULT_STABILIZATION,
-    ...(options.smoothing !== undefined && { smoothing: options.smoothing }),
+    ...(options.smoothing !== undefined && { smoothing: seconds(options.smoothing) }),
   });
   return { attitude, view };
 }

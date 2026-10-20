@@ -31,9 +31,10 @@ export type FrameCopier = (frame: VideoFrame, texture: GPUTexture) => void | Pro
  * target, scaled to fill it.
  *
  * @remarks Importing is the path browsers make cheap for video (no CPU copy, the decoder's own
- * planes sampled and converted to RGB on the GPU); `copyExternalImageToTexture` from a decoded
- * frame lost the device in headless Chromium where this path did not. The pipeline is made once per
- * target format; the external texture lives only for the pass that draws it.
+ * planes sampled and converted to RGB on the GPU). It is used rather than
+ * `copyExternalImageToTexture`, which loses the device on decoded frames in headless macOS Chromium
+ * where importing works. The pipeline is made once per target format; the external texture lives
+ * only for the pass that draws it.
  */
 export function externalFrameCopier(device: GPUDevice): FrameCopier {
   const copying: Copying = {

@@ -30,8 +30,8 @@ export interface StabilizationSample {
  *
  * @remarks The stabilized view holds the orientation the camera had at the first sample: every
  * correction maps that sample's attitude back onto itself, so a tumbling camera shows a scene that
- * stays still. This is the default stabilization: it keeps the whole sphere fixed in the world,
- * including heading. Holding only the horizon, or letting heading follow slowly, are other modes.
+ * stays still: the whole sphere is fixed in the world, heading included. Holding only the horizon,
+ * or letting heading follow slowly (a rendition's default, `smooth`), are other modes.
  */
 export function lockToWorld(orientation: readonly OrientationSample[]): StabilizationSample[] {
   const reference = orientation[0]?.orientation ?? identity();
@@ -65,11 +65,11 @@ export function levelHorizon(orientation: readonly OrientationSample[]): Stabili
  * the horizon stays flat. Its heading follows an exponential smoothing of the camera's heading (a
  * slerp toward each sample's heading, per-step weight `1 - exp(-dt / timeConstant)`), run forward
  * through the stream and then backward over the result. A one-way filter trails a deliberate pan by
- * about the time constant; the backward pass leads by the same amount, so a steady pan comes through
- * without delay while jitter is filtered twice. This needs the whole stream, which a recording has.
- * A larger `timeConstant` smooths harder, toward a locked heading; a very small one follows the
- * heading exactly, as {@link levelHorizon} does. The time constant is the tuning surface, not a
- * contract.
+ * about the time constant; the backward pass leads by the same amount, so a steady pan comes
+ * through without delay while jitter is filtered twice. This needs the whole stream, which a
+ * recording has. A larger `timeConstant` smooths harder, toward a locked heading; a very small one
+ * follows the heading exactly, as {@link levelHorizon} does. The time constant is the tuning
+ * surface, not a contract.
  */
 export function smoothHeading(
   orientation: readonly OrientationSample[],

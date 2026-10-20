@@ -51,12 +51,13 @@ interface Decoding {
 /**
  * Decodes a range of a video's frames and yields the wanted ones, in presentation order.
  *
- * @remarks Frames are read from the files they name and fed in decode order from `range.start` (a sync frame)
- * to `range.end`, at most `ahead` queued in the decoder at a time, so a long video never fills
- * memory. The decoder outputs frames in presentation order; a frame whose timestamp is in `wanted`
- * is yielded, and the caller closes it, while any other (the lead-in from the sync frame) is closed
- * here. A decoder error, a frame naming a file not given, or `signal` aborting, ends the iteration with that error. However it ends,
- * the decoder is closed, and so is every frame not yet handed out.
+ * @remarks Frames are read from the files they name and fed in decode order from `range.start` (a
+ * sync frame) to `range.end`, at most `ahead` queued in the decoder at a time, so a long video
+ * never fills memory. The decoder outputs frames in presentation order; a frame whose timestamp is
+ * in `wanted` is yielded, and the caller closes it, while any other (the lead-in from the sync
+ * frame) is closed here. A decoder error, a frame naming a file not given, or `signal` aborting,
+ * ends the iteration with that error. However it ends, the decoder is closed, and so is every frame
+ * not yet handed out.
  */
 export async function* decodeVideo(job: DecodeJob): AsyncGenerator<VideoFrame, void, undefined> {
   const wanted = new Set(job.wanted);

@@ -23,8 +23,7 @@ the parts that compute motion, stitch, or measure.
 - **The layers are enforced, not just described.** `.dependency-cruiser.cjs` holds every import
   rule in this decision as a build-breaking check.
 - **No playback.** No clock, audio sync, transport or UI lives in any published package. A player
-  is an application that calls the library once per frame; examples of that live in `examples/`
-  and are not published.
+  is an application that calls the library once per frame.
 
 ## Consequences
 

@@ -20,10 +20,10 @@ const browserFrame: FrameMaker = (data, init) => new VideoFrame(data, init);
  * A {@link Presenter} that renders into a texture of its own and reads each frame back as RGBA
  * bytes for a `VideoFrame`.
  *
- * @remarks A canvas would avoid the copy, but a worker's WebGPU canvas is never presented: a
- * frame made from it read blank in headless Chromium, and one made from its transferred bitmap
- * failed. Reading the texture back behaves the same in every browser. Rows are padded to the 256 bytes a copy needs, and the frame's layout says so. The
- * staging buffer is reused from frame to frame.
+ * @remarks A canvas would avoid the copy, but a worker's WebGPU canvas is never presented: a frame
+ * made from it read blank in headless Chromium, and one made from its transferred bitmap failed.
+ * Reading the texture back behaves the same in every browser. Rows are padded to the 256 bytes a
+ * copy needs, and the frame's layout says so. The staging buffer is reused from frame to frame.
  */
 export function readbackPresenter(
   device: GPUDevice,

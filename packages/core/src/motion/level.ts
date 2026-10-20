@@ -40,15 +40,14 @@ export interface LevelOptions {
  *
  * @remarks The gyro stream is integrated (ADR 0004) and keeps every bit of its frame-to-frame
  * motion; the accelerometer only decides, slowly, which way is up. Each accelerometer reading is
- * turned into the integrated frame and weighted by how close its magnitude is to one g (a jumper
- * leaving the plane, or pulling hard, reads far from it and barely counts), the readings are
+ * turned into the integrated frame and weighted by how close its magnitude is to one g (a camera in
+ * free fall, or pulling hard in a turn, reads far from it and barely counts), the readings are
  * averaged with a Gaussian of `window` (four seconds unless given) both ways in time, and the
- * attitude is turned by the smallest tilt that takes that averaged up to the world's. The tilt moves
- * at the speed of the gyro's drift, so it adds nothing a viewer sees from frame to frame, unlike a
- * filter that follows the accelerometer as it goes. Heading is the gyro's. Without an
- * accelerometer, or with timestamps spread far wider than its samples (no recording's), the
- * result is plain integration. It needs the whole recording, which a rendition
- * has. See ADR 0016.
+ * attitude is turned by the smallest tilt that takes that averaged up to the world's. The tilt
+ * moves at the speed of the gyro's drift, so it adds nothing a viewer sees from frame to frame,
+ * unlike a filter that follows the accelerometer as it goes. Heading is the gyro's. Without an
+ * accelerometer, or with timestamps spread far wider than its samples (no recording's), the result
+ * is plain integration. It needs the whole recording, which a rendition has. See ADR 0016.
  */
 export function levelOrientation(
   angularVelocity: readonly MotionSample[],
@@ -61,11 +60,11 @@ export function levelOrientation(
 /**
  * Levels an attitude by up readings averaged over seconds, keeping its frame-to-frame motion.
  *
- * @remarks The levelling of {@link levelOrientation}, for an attitude that comes from elsewhere: a
- * camera's own fused orientation (a GoPro's `CORI`) with its own gravity readings, given as the up
- * direction in the body's frame. Each reading is turned into the attitude's frame, weighted by
- * `trust`, averaged over `window` both ways in time, and the attitude is turned by the smallest tilt
- * that takes that average to the world's up.
+ * @remarks The levelling of {@link levelOrientation}, for an attitude already integrated or one
+ * that comes from elsewhere, with up readings given as the up direction in the body's frame (an
+ * accelerometer, or a camera's own gravity estimate). Each reading is turned into the attitude's
+ * frame, weighted by `trust`, averaged over `window` both ways in time, and the attitude is turned
+ * by the smallest tilt that takes that average to the world's up.
  */
 export function levelAttitude(
   attitude: readonly OrientationSample[],

@@ -24,7 +24,7 @@ const bytes = new Uint8Array(readFileSync(fixture));
 const file = new Blob([bytes]);
 const both = { main: { blob: file }, second: { blob: file } };
 const notARecording = new Blob([new Uint8Array(300)]);
-const goproFixture = path.resolve(path.dirname(fixture), '../gopro/max-eac.360');
+const goproFixture = path.resolve(path.dirname(fixture), '../gopro/max2-eac.360');
 const gopro = new Blob([new Uint8Array(readFileSync(goproFixture))]);
 const FPS = 30_000 / 1001;
 
@@ -224,6 +224,11 @@ describe('a rendition of a recording', () => {
     const reds = litPixels(frames[0]).map((pixel) => pixel[0]);
     expect(Math.max(...reds) - Math.min(...reds)).toBeLessThanOrEqual(8);
     expect(fakes.open).toEqual({ frames: 0, decoders: 0 });
+  });
+
+  it('takes the smoothing as a plain number of seconds', async () => {
+    const frames = await render(fakePlatform(), { stabilization: 'follow', smoothing: 2 });
+    expect(frames).toHaveLength(3);
   });
 
   it('shows each lens as recorded without colour matching', async () => {

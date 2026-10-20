@@ -23,9 +23,13 @@ tested to the core's standard and the browser layer thin.
   is the capture clock plus its media time (ADR 0010), the output turns by `outputToCamera` at that
   moment, the rolling-shutter turn is tabulated down the canvas rows (ADR 0011), and the output is
   twice as wide as tall with an even height.
-- **`stitch/estimateColour`** measures the vignetting and gains (ADR 0008) from a small RGBA copy
-  of each video's frame (`LensPicture`), read through each lens's image placement, so the browser
-  layer only has to copy a frame to a few hundred pixels.
+- **`rendition/cubeFrameAt`** gives a cube-map frame (ADR 0020) the same way, timed and turned as
+  `frameAt`, with no rolling-shutter table and no colour correction: the camera stitched and matched
+  its own lenses.
+- **`stitch/estimateColour`** returns a `ColourCorrection`: each lens's gains (ADR 0008) and the
+  seam colour field (ADR 0018), measured after each lens is flattened by its own vignetting (ADR
+  0017). It reads a small RGBA copy of each video's frame (`LensPicture`) through each lens's image
+  placement, so the browser layer only has to copy a frame to a few hundred pixels.
 
 ## Consequences
 

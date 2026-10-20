@@ -7,10 +7,10 @@ import { degreesToRadians } from '../shared/units/units';
  * The extra turn a lens's image row was exposed with, relative to the frame's moment.
  *
  * @remarks A rolling-shutter sensor reads its rows out one after another, so a camera turning
- * during readout sees each row from a slightly different attitude. Given a lens index and a pixel (in
- * calibration-canvas pixels), this returns the rotation that takes a camera-frame direction at the
- * frame's moment to the same direction at the moment that pixel's row was read. Which coordinate
- * the rows run along, and in which order, is the sensor's and is left to the caller.
+ * during readout sees each row from a slightly different attitude. Given a lens index and a pixel
+ * (in calibration-canvas pixels), this returns the rotation that takes a camera-frame direction at
+ * the frame's moment to the same direction at the moment that pixel's row was read. Which
+ * coordinate the rows run along, and in which order, is the sensor's and is left to the caller.
  */
 export type Shutter = (lens: number, pixel: readonly [number, number]) => Quaternion;
 
@@ -18,8 +18,8 @@ export type Shutter = (lens: number, pixel: readonly [number, number]) => Quater
  * One lens's contribution to an output direction: which lens, where to sample it, how far out on
  * the fisheye that is, and its blend weight.
  *
- * @remarks `reach` is the pixel's distance from the lens centre over the calibration radius: 0 at the
- * centre, 1 at the radius, and above 1 where the lens's coverage extends past it.
+ * @remarks `reach` is the pixel's distance from the lens centre over the calibration radius: 0 at
+ * the centre, 1 at the radius, and above 1 where the lens's coverage extends past it.
  */
 export interface LensSample {
   readonly lens: number;
@@ -42,10 +42,11 @@ interface Covered {
  * rotates the output direction by the stabilization correction before calling this. Each covered
  * lens contributes, weighted by how far inside its field of view the direction sits (its margin,
  * eased in with a smoothstep over the overlap's width), so the weights sum to one and feather to
- * zero at a lens's edge with no kink, handing off smoothly across the seam. A direction no lens covers returns nothing (a hole). Samples come in lens order. Exposure
- * and vignetting are corrected on the lens colours, not here (ADR 0008). With a `shutter`, each lens
- * is sampled where the direction pointed when that lens's row was exposed: projected once at the
- * frame's moment to find the row, then again through that row's turn.
+ * zero at a lens's edge with no kink, handing off smoothly across the seam. A direction no lens
+ * covers returns nothing (a hole). Samples come in lens order. Exposure and vignetting are
+ * corrected on the lens colours, not here (ADR 0008). With a `shutter`, each lens is sampled where
+ * the direction pointed when that lens's row was exposed: projected once at the frame's moment to
+ * find the row, then again through that row's turn.
  */
 export function stitchSample(
   lenses: readonly LensOptics[],

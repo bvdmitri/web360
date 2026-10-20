@@ -35,8 +35,8 @@ second, horizon levelness) could not see frame-to-frame jitter.
 - **Rolling shutter**: steering each direction by the attitude when its sensor row was read
   (readouts from -30 to 30 ms, either way down the sensor) changed the jitter by no more than its
   noise, so the cube map is not corrected for it.
-- The owner judged clips of the three candidates by eye: `CORI` at 5 ms and the gyro at 10 ms both
-  steadier than ADR 0021's, the gyro slightly so.
+- Judged by eye on MAX2 clips of the three candidates: `CORI` at 5 ms and the gyro at 10 ms are
+  both steadier than ADR 0021's, the gyro slightly so.
 
 ## Decision
 
@@ -45,13 +45,13 @@ second, horizon levelness) could not see frame-to-frame jitter.
   `captureClock` to 10 ms.
 - `CameraRecording.gravity` carries the camera's own up readings (`GRAV` negated). `attitudeOf`
   always integrates the gyro (ADR 0016) and levels it by `gravity` when a camera writes one, every
-  reading counted alike, and by the accelerometer near one g otherwise. The reported-attitude field
-  is gone: no renderer reads `CORI`.
+  reading counted alike, and by the accelerometer near one g otherwise. `CameraRecording` carries
+  no reported attitude, and no renderer reads `CORI`.
 - `IORI` stays unused.
 
 ## Consequences
 
 - MAX2 stabilization follows the gyro at 800 Hz, as the ONE R's does, with the horizon from the
-  camera's gravity as before.
+  camera's gravity.
 - The original MAX takes the MAX2's turn and clock until its footage is measured.
 - The harnesses (`goproJitter`, `goproRates`, `goproPreview`) are how a new body is measured.

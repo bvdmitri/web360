@@ -31,16 +31,16 @@ interface Context {
  * Refines the lenses' shared mapping and their relative pose so they register best across the seam.
  *
  * @remarks Starting from `lenses`, this adjusts one `fieldOfView` (focal length) shared by every
- * lens, and every lens's pose after the first, by coordinate descent on {@link seamCorrelation} over
- * `band`: each parameter is nudged up and down by its step, a nudge is kept if it raises the
+ * lens, and every lens's pose after the first, by coordinate descent on {@link seamCorrelation}
+ * over `band`: each parameter is nudged up and down by its step, a nudge is kept if it raises the
  * correlation, and a step that helps in neither direction is halved, until every step is below a
  * few thousandths of a degree. The mapping is shared because the seam only constrains the lenses'
  * focal lengths together: on a thin band around the seam, one lens a little long and the other a
  * little short register almost as well as both right, so separate focal lengths would drift along
  * that ridge rather than converge. The first lens is the reference pose, as rotating every lens
- * together does not change how they register, and coverage is left alone. Run it on frames where the
- * scene is far from the camera (freefall, open sky); anything close to the lenses has parallax no
- * calibration removes and will pull the result toward a compromise.
+ * together does not change how they register, and coverage is left alone. Run it on frames where
+ * the scene is far from the camera (freefall, open sky); anything close to the lenses has parallax
+ * no calibration removes and will pull the result toward a compromise.
  */
 export function refineCalibration(
   lenses: readonly LensOptics[],

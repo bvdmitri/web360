@@ -17,10 +17,10 @@ export interface Grid {
  * What the first two lenses that see one overlap direction record there, compared.
  *
  * @remarks `logRatio` is the log of the first lens's brightness over the second's, and
- * `reachSquaredGap` is the second lens's squared reach minus the first's (how much nearer its rim the
- * second lens is). Exposure differences shift `logRatio` by a constant, vignetting tilts it along
- * `reachSquaredGap`, and mis-registration or parallax scatters it. `innerReach` is the smaller of
- * the two lenses' reach, so the pairs' least `innerReach` is where the overlap begins.
+ * `reachSquaredGap` is the second lens's squared reach minus the first's (how much nearer its rim
+ * the second lens is). Exposure differences shift `logRatio` by a constant, vignetting tilts it
+ * along `reachSquaredGap`, and mis-registration or parallax scatters it. `innerReach` is the
+ * smaller of the two lenses' reach, so the pairs' least `innerReach` is where the overlap begins.
  */
 export interface OverlapPair {
   readonly logRatio: number;

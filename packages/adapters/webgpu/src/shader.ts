@@ -5,11 +5,12 @@
  * @remarks It applies the reference stitch (`renderEquirectangular` in the core) to the numbers
  * `packStitch` lays out, slot for slot: the output direction rotated by the correction, each lens
  * projected by the equidistant model (and again through the tabulated rolling-shutter turn of the
- * row it lands on), the overlap weighted by each lens's margin eased in over the overlap's width, and each lens's colour devignetted,
- * scaled by its gain and shifted by the seam colour field. The angle from the optical axis is taken as `atan2` of the sine and cosine
- * rather than `acos`, which keeps single precision accurate near the lens centre. Lens images come
- * from up to two textures, sampled linearly with canvas pixels at texel centres; outside its image a
- * lens reads black, as in the reference.
+ * row it lands on), the overlap weighted by each lens's margin eased in over the overlap's width,
+ * and each lens's colour devignetted, scaled by its gain and shifted by the seam colour field. The
+ * angle from the optical axis is taken as `atan2` of the sine and cosine rather than `acos`, which
+ * keeps single precision accurate near the lens centre. Lens images come from up to two textures,
+ * sampled linearly with canvas pixels at texel centres; outside its image a lens reads black, as in
+ * the reference.
  */
 export const STITCH_SHADER = /* wgsl */ `
 const PI = 3.141592653589793;

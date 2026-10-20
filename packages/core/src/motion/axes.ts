@@ -36,8 +36,8 @@ const CORNERS: Vector3[] = [
  * @remarks An IMU is mounted square to the camera body, so the rotation from its axes to the lens
  * calibration frame is, to within a mounting tolerance, one of these: the rotations of a cube. They
  * are the candidates a calibration search tries. Built as the identity, quarter, half and
- * three-quarter turns about each axis, half turns about the six edge diagonals, and third turns about
- * the four body diagonals.
+ * three-quarter turns about each axis, half turns about the six edge diagonals, and third turns
+ * about the four body diagonals.
  */
 export function axisAlignments(): Quaternion[] {
   return [

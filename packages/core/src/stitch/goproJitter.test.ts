@@ -2,8 +2,8 @@
 // much each way of steering the picture leaves it shaking from frame to frame (ADR 0023). For each
 // moment it decodes consecutive frames once (needs ffmpeg), renders them under `lock` with each
 // candidate attitude, and writes the jitter (residualMotion.ts) in degrees to OUT.json. Settings:
-//   WEB360_GOPRO_JITTER=<file.360>  WEB360_GOPRO_OUT=<stem of the .json>
-//   WEB360_GOPRO_MOMENTS=<s,s,...>  WEB360_GOPRO_GYRO_OFFSETS=<ms,ms,...> (the gyro's clock offsets)
+// WEB360_GOPRO_JITTER=<file.360>  WEB360_GOPRO_OUT=<stem of the .json>
+// WEB360_GOPRO_MOMENTS=<s,s,...>  WEB360_GOPRO_GYRO_OFFSETS=<ms,ms,...> (the gyro's clock offsets)
 import { execFileSync } from 'node:child_process';
 import {
   appendFileSync,

@@ -27,7 +27,8 @@ const samplers = [
 describe('cube map render', () => {
   it('shows the front face ahead, the up face above and the down face below', () => {
     const pixels = renderCubeMap({ cube, samplers, correction: identity(), width: 8, height: 3 });
-    // Around the horizon, longitudes 112.5, 22.5, -67.5 and -157.5 degrees: left, front, right, back.
+    // Around the horizon, longitudes 112.5, 22.5, -67.5 and -157.5 degrees: left, front, right,
+    // back.
     expect([pixels[9], pixels[11], pixels[13], pixels[15]]).toEqual([RED, GREEN, BLUE, [0, 1, 1]]);
     expect(pixels[3]).toEqual([1, 0, 1]);
     expect(pixels[19]).toEqual([1, 1, 0]);

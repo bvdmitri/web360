@@ -10,7 +10,7 @@ import { readMovie, samplesOf } from './movie';
 
 const fixture = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
-  '../../../../../test/fixtures/gopro/max-eac.360',
+  '../../../../../test/fixtures/gopro/max2-eac.360',
 );
 
 describe('mp4 movie, on a real GoPro MAX .360', () => {

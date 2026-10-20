@@ -1,14 +1,15 @@
 # ADR 0005: Drift-corrected attitude by sensor fusion
 
-Status: accepted (2026-10-19)
+Status: accepted (2026-10-19); superseded for renditions by ADR 0016 (`fuseOrientation` stays
+exported, but no renderer uses it)
 
 ## Context
 
 Integrating the gyro stream alone (ADR 0004) drifts: small rate errors accumulate, so over a long
 recording the horizon slowly tilts and the heading wanders. The accelerometer measures the
 direction of gravity absolutely, with no drift, but it is corrupted by the camera's own linear
-acceleration, and a skydive is nothing but large linear accelerations (near zero g in freefall,
-hard spikes at canopy opening). Neither sensor alone gives a stable vertical. Horizon leveling and
+acceleration, and the test footage is full of large ones (near zero g in freefall, hard spikes at
+canopy opening). Neither sensor alone gives a stable vertical. Horizon leveling and
 heading smoothing both need an attitude whose vertical stays correct, so the two streams have to be
 fused, and the fusion method is a decision the modes above it should not each re-make.
 

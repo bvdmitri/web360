@@ -13,10 +13,10 @@ import { degreesToRadians } from '../shared/units/units';
  * Where a direction lands on a lens: its pixel, its angle from the optical axis, how far out on the
  * fisheye that is, whether the lens is trusted there, and by how much.
  *
- * @remarks `reach` is the pixel's distance from the lens centre over `radius` (equivalently the angle
- * over half the mapping `fieldOfView`); it may exceed 1 where `coverage` is wider than the mapping.
- * `margin` is half the `coverage` minus the angle: positive inside, zero at the edge, negative
- * outside. The stitch weights the overlap by the margin.
+ * @remarks `reach` is the pixel's distance from the lens centre over `radius` (equivalently the
+ * angle over half the mapping `fieldOfView`); it may exceed 1 where `coverage` is wider than the
+ * mapping. `margin` is half the `coverage` minus the angle: positive inside, zero at the edge,
+ * negative outside. The stitch weights the overlap by the margin.
  */
 export interface Projected {
   readonly pixel: readonly [number, number];
@@ -29,10 +29,11 @@ export interface Projected {
 /**
  * Projects a camera-frame direction onto a lens's image.
  *
- * @remarks `direction` is a unit vector in the camera frame. It is rotated into the lens frame by the
- * lens pose, then mapped by the equidistant model `r = f · angle` (ADR 0007), where the angle is
- * measured from the optical axis and `f = radius / (fieldOfView / 2)`. `covered` is false when the
- * angle falls outside the lens's `coverage`, so the stitch does not sample beyond the usable image.
+ * @remarks `direction` is a unit vector in the camera frame. It is rotated into the lens frame by
+ * the lens pose, then mapped by the equidistant model `r = f · angle` (ADR 0007), where the angle
+ * is measured from the optical axis and `f = radius / (fieldOfView / 2)`. `covered` is false when
+ * the angle falls outside the lens's `coverage`, so the stitch does not sample beyond the usable
+ * image.
  */
 export function project(lens: LensOptics, direction: Vector3): Projected {
   const [x, y, z] = rotate(conjugate(lensPose(lens.orientation)), direction);

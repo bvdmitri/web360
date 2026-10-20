@@ -1,6 +1,7 @@
 # ADR 0012: The stitch renders on WebGPU
 
-Status: accepted (2026-10-19)
+Status: accepted (2026-10-19); superseded in part by ADR 0022 (how a decoded frame reaches a
+texture)
 
 ## Context
 
@@ -23,10 +24,11 @@ WebGPU narrows support only a little.
   only those numbers, so its maths is the core's, and `optics/lensPose` is shared so both project
   the same way.
 - **Lens images are ordinary sampled textures**, one per lens or one shared, sampled linearly with
-  calibration-canvas pixels at texel centres. A decoded `VideoFrame` reaches one by
-  `copyExternalImageToTexture`. External textures would skip that copy but cannot be exercised
-  outside a browser; one texture path keeps the shader testable. (How a frame reaches the texture
-  in a browser is ADR 0022: imported where the browser can, copied on the CPU where it cannot.)
+  calibration-canvas pixels at texel centres. The stitch shader never samples an external texture:
+  a decoded `VideoFrame` reaches one of these textures before the stitch runs, imported with
+  `importExternalTexture` and drawn onto it where the browser can, copied on the CPU and written
+  with `writeTexture` where it cannot (ADR 0022). One texture path keeps the shader testable outside
+  a browser.
 - **The shader is tested against the reference on a real GPU**: the adapter's tests render
   synthetic lens images through Dawn's Node bindings (`webgpu`, a dev dependency) and compare every
   output pixel to `renderEquirectangular` with a bilinear sampler, for the plain stitch, gains,
@@ -34,8 +36,8 @@ WebGPU narrows support only a little.
 
 ## Consequences
 
-- The stitch needs WebGPU; a browser without it cannot stitch, and the consuming application blocks
-  the upload rather than falling back.
+- The stitch needs WebGPU; in a browser without it opening a rendition fails
+  (`render-unavailable`), with no fallback renderer.
 - The shader works in single precision, so it takes the angle from the optical axis as `atan2` of
   its sine and cosine (`acos` would lose accuracy near the lens centre). Its output agrees with the
   reference to within 3 of 255 levels.

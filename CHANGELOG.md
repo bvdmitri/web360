@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-10-20
+
+### Changed
+
+- The `smoothing` option takes a plain number of seconds.
+- The package ships its MIT licence, and its README documents the `platform` option.
+- Documentation describes the library as it is: the cameras it reads, what is measured and what is
+  provisional, and the Insta360 file format.
+
 ## [0.4.2] - 2026-10-20
 
 ### Changed
@@ -66,3 +75,11 @@ All notable changes to this project are documented here. The format follows
 - Rolling-shutter correction, and lens exposure and vignetting matched across the seam.
 - `Web360Error` codes for what stops a rendition: no WebGPU, no WebCodecs, an unsupported codec, a
   missing lens file, an unreadable recording, a decode failure.
+
+[0.4.3]: https://www.npmjs.com/package/@bvdmitri/web360/v/0.4.3
+[0.4.2]: https://www.npmjs.com/package/@bvdmitri/web360/v/0.4.2
+[0.4.1]: https://www.npmjs.com/package/@bvdmitri/web360/v/0.4.1
+[0.4.0]: https://www.npmjs.com/package/@bvdmitri/web360/v/0.4.0
+[0.3.0]: https://www.npmjs.com/package/@bvdmitri/web360/v/0.3.0
+[0.2.0]: https://www.npmjs.com/package/@bvdmitri/web360/v/0.2.0
+[0.1.0]: https://www.npmjs.com/package/@bvdmitri/web360/v/0.1.0

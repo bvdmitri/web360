@@ -35,9 +35,11 @@ try {
   ways in time), `lock` (fixed in the world), `horizon` (level, facing where the camera faces),
   `follow` (the camera's motion smoothed, tilt included) or `off`.
 - `smoothing`: the time constant of `smooth` and `follow`, in seconds (1 by default).
-- `gainMatching`: match the lenses' exposure and vignetting across the seam (on by default; a
-  GoPro has matched its own).
+- `gainMatching`: match the lenses' exposure and colour across the seam, re-measured as the video
+  goes (on by default; a GoPro has matched its own).
 - `signal`: an `AbortSignal` that stops the rendition.
+- `platform`: where decoding, rendering and presenting happen; the browser's by default
+  (`browserPlatform()`). A test supplies its own to run a rendition outside a browser.
 
 `rendition.metadata` gives the recording's `duration` in seconds and its camera `model`;
 `rendition.duration` is the span's length.

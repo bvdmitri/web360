@@ -4,9 +4,9 @@ import { MissingLensFileError } from '@web360/core';
  * Why a rendition could not be made, as a code an application can act on.
  *
  * @remarks `render-unavailable`: the browser has no WebGPU device. `webcodecs-unavailable`: it has
- * no WebCodecs. `codec-unsupported`: it cannot decode the recording's video codec.
- * `decode`: decoding failed partway. `missing-second-file`: a split recording was opened without its
- * second file. `unreadable-recording`: the files are not a recording web360 reads.
+ * no WebCodecs. `codec-unsupported`: it cannot decode the recording's video codec. `decode`:
+ * decoding failed partway. `missing-second-file`: a split recording was opened without its second
+ * file. `unreadable-recording`: the files are not a recording web360 reads.
  */
 export type Web360ErrorCode =
   | 'render-unavailable'

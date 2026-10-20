@@ -18,13 +18,16 @@ is (rule 5).
 
 ## Where things are described
 
-| Topic                                          | Document                                           |
-| ---------------------------------------------- | -------------------------------------------------- |
-| Where the work stands and what is next         | [PLAN.md](./PLAN.md)                               |
-| Layers, packages, dependency rules, public API | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)     |
-| Private samples and committed fixtures         | [docs/SAMPLES.md](./docs/SAMPLES.md)               |
-| File formats, one per vendor                   | `docs/FORMAT-<vendor>.md` (added with each reader) |
-| Decisions and their reasons                    | `docs/adr/`                                        |
+| Topic                                          | Document                                             |
+| ---------------------------------------------- | ---------------------------------------------------- |
+| Where the work stands and what is next         | [PLAN.md](./PLAN.md)                                 |
+| Layers, packages, dependency rules, public API | [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)       |
+| Private samples and committed fixtures         | [docs/SAMPLES.md](./docs/SAMPLES.md)                 |
+| The ISO base media container                   | [docs/FORMAT-iso-bmff.md](./docs/FORMAT-iso-bmff.md) |
+| Insta360 files                                 | [docs/FORMAT-insta360.md](./docs/FORMAT-insta360.md) |
+| GoPro files                                    | [docs/FORMAT-gopro.md](./docs/FORMAT-gopro.md)       |
+| File formats, one per vendor                   | `docs/FORMAT-<vendor>.md` (added with each reader)   |
+| Decisions and their reasons                    | `docs/adr/`                                          |
 
 ## Hard rules
 
@@ -36,10 +39,11 @@ is (rule 5).
 3. **Only `format/` reads bytes.** Everything else receives decoded values in the common model.
    Vendor readers never import each other.
 4. **No player.** No playback state, clocks, audio sync or UI in any published package.
-   Examples live in `examples/` and are not published.
-5. **A camera body is supported only when documented.** Its format facts are in
-   `docs/FORMAT-<vendor>.md`, stated plainly as facts about the file, and a fixture covers it.
-   A body without both is reported as unsupported, never guessed.
+5. **A camera body is documented, and its defaults say what is measured.** Its format facts are
+   in `docs/FORMAT-<vendor>.md`, stated plainly as facts about the file, and a fixture covers the
+   format. A body of a known format that has not been measured opens with its family's measured
+   values, marked provisional in the format doc and the README, until its own footage sets them;
+   a file of an unknown format is refused, never guessed at.
 6. **Formats are described as facts.** A format doc says what the bytes mean ("record 3 holds gyro
    samples: ..."), with units, byte order and the camera bodies it was verified on. Byte order is
    stated per record and differs by vendor (Insta360 is little-endian, GoPro's GPMF is

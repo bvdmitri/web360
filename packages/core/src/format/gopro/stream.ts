@@ -37,8 +37,9 @@ export class UnsupportedStreamError extends Error {
  *
  * @remarks Supports the signed-16-bit streams divided by their `SCAL` (the sensors `GYRO`, `ACCL`,
  * `MAGN`; the per-frame `CORI` and `IORI` quaternions and `GRAV` vectors) and the 32-bit float
- * streams, which are already in their unit (`SHUT`); any other type throws
- * {@link UnsupportedStreamError} rather than misreading its bytes. Absent labels read as the empty string and an absent `STMP` as `0`.
+ * streams, which are already in their unit (`SHUT`); any other type throws {@link
+ * UnsupportedStreamError} rather than misreading its bytes. Absent labels read as the empty string
+ * and an absent `STMP` as `0`.
  */
 export function readStream(reader: ByteReader, strm: KlvNode): GpmfStream {
   const children = childrenOf(reader, strm);

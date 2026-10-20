@@ -14,23 +14,23 @@ const GYRO = 3;
 const EXPOSURE = 4;
 const MS_PER_SECOND = 1000;
 
-// The v1 calibration carries neither angle, so the reader supplies them per camera model (ADR 0007).
-// For the ONE R: the mapping reaches the calibration radius at 183 degrees, the value at which the
-// two lenses register best across the seam on far-field (freefall) footage; and the image is
-// trusted out to 185 degrees (about 1.011 times the radius), inside the illuminated circle's dark
-// border, which at some azimuths begins before 1.03 and drew a line along the seam (ADR 0019).
+// The v1 calibration carries neither angle, so the reader supplies them per camera model (ADR
+// 0007). For the ONE R: the mapping reaches the calibration radius at 183 degrees, the value at
+// which the two lenses register best across the seam on far-field (freefall) footage; and the image
+// is trusted out to 185 degrees (about 1.011 times the radius), inside the illuminated circle's
+// dark border, which at some azimuths begins before 1.03 and drew a line along the seam (ADR 0019).
 const FIELD_OF_VIEW_DEGREES = 183;
 const COVERAGE_DEGREES = 185;
 const FIELD_OF_VIEW = degrees(FIELD_OF_VIEW_DEGREES);
 
-// The ONE R's falloff toward the rim of its image circle, measured on the owner's footage by
+// The ONE R's falloff toward the rim of its image circle, measured on ONE R footage by
 // averaging a frame a second of each lens over a whole jump: flat to a reach of 0.998, then darker
 // by `exp(-4.78 * (reach^2 - 0.998^2))`, about 0.89 at 1.01 and 0.73 at 1.03 (ADR 0017).
 const VIGNETTING: Vignetting = { strength: 4.78, start: 0.998 };
 const COVERAGE = degrees(COVERAGE_DEGREES);
 
 // The ONE R's IMU axes sit a quarter turn about X from the lens calibration frame (IMU z along the
-// lens frame's y), measured on the owner's footage: of the 24 axis-aligned candidates it is the one
+// lens frame's y), measured on ONE R footage: of the 24 axis-aligned candidates it is the one
 // that keeps a world-locked view stillest through fast canopy turns (ADR 0010).
 const IMU_TO_CAMERA = fromRotationVector([-Math.PI / 2, 0, 0]);
 

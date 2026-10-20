@@ -1,14 +1,13 @@
 // Developer harness, skipped unless WEB360_GOPRO_PREVIEW names a GoPro .360 recording: renders one
 // moment of its cube map to an equirectangular PNG (needs ffmpeg), or runs one of the measurements
-// of ADR 0021 and 0023. Settings:
-//   WEB360_GOPRO_PREVIEW=<file.360>  WEB360_GOPRO_OUT=<png, or the stem of a search's .json>
-//   WEB360_GOPRO_AT=<seconds>  WEB360_GOPRO_SCALE=<0..1, the decode size against the stored size>
-//   WEB360_GOPRO_STAB=<off|lock|horizon|smooth|follow>  stabilizes the still with the attitude
-//   WEB360_GOPRO_SEARCH=1  ranks readings of the attitude a rendition uses, each with the 24 axis-aligned
-//     turns to the cube, by how still they hold the world between frames at the fastest moments
-//   WEB360_GOPRO_OFFSETS=<ms,ms,...>  ranks time offsets of the attitude against the picture alike
-//   WEB360_GOPRO_HORIZON=<s,s,...>  ranks the 24 turns by how level the horizon comes out under
-//     horizon levelling at those moments
+// of ADR 0021 and 0023. Settings: WEB360_GOPRO_PREVIEW=<file.360>  WEB360_GOPRO_OUT=<png, or the
+// stem of a search's .json> WEB360_GOPRO_AT=<seconds>  WEB360_GOPRO_SCALE=<0..1, the decode size
+// against the stored size> WEB360_GOPRO_STAB=<off|lock|horizon|smooth|follow>  stabilizes the still
+// with the attitude WEB360_GOPRO_SEARCH=1  ranks readings of the attitude a rendition uses, each
+// with the 24 axis-aligned turns to the cube, by how still they hold the world between frames at
+// the fastest moments WEB360_GOPRO_OFFSETS=<ms,ms,...>  ranks time offsets of the attitude against
+// the picture alike WEB360_GOPRO_HORIZON=<s,s,...>  ranks the 24 turns by how level the horizon
+// comes out under horizon levelling at those moments
 import { execFileSync } from 'node:child_process';
 import {
   closeSync,

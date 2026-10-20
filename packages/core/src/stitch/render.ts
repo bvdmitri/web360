@@ -34,12 +34,12 @@ export interface Scene {
 /**
  * Composites one equirectangular frame on the CPU, row-major, each pixel in `[0, 1]` colours.
  *
- * @remarks This is the reference stitch: for each output pixel it takes the direction
- * ({@link toDirection}), rotates it by the stabilization correction into the camera frame, asks
- * {@link stitchSample} which lenses see it, and blends their samplers by weight, each scaled by its
- * lens gain and shifted by the seam colour field. It is the golden image the GPU shader is checked against and is fine for a
- * low-resolution preview, but it is too slow for full-resolution video, which the GPU adapter
- * handles. A direction no lens covers is black.
+ * @remarks This is the reference stitch: for each output pixel it takes the direction ({@link
+ * toDirection}), rotates it by the stabilization correction into the camera frame, asks {@link
+ * stitchSample} which lenses see it, and blends their samplers by weight, each scaled by its lens
+ * gain and shifted by the seam colour field. It is the golden image the GPU shader is checked
+ * against and is fine for a low-resolution preview, but it is too slow for full-resolution video,
+ * which the GPU adapter handles. A direction no lens covers is black.
  */
 export function renderEquirectangular(scene: Scene): Rgb[] {
   const pixels: Rgb[] = [];

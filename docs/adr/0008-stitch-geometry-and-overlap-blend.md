@@ -1,6 +1,7 @@
 # ADR 0008: Stitch geometry and overlap blend
 
-Status: accepted (2026-10-19), the blend provisional until evaluated on real footage; its per-frame vignetting is superseded by ADR 0017
+Status: accepted (2026-10-19); its per-frame vignetting superseded by ADR 0017, and its linear
+weights by ADR 0019 (each margin eased in by a smoothstep, `stitch/sample.ts`)
 
 ## Context
 
@@ -15,8 +16,8 @@ the reference the GPU shader implements.
   longitude runs `-pi` to `+pi` left to right, latitude `+pi/2` to `-pi/2` top to bottom, the centre
   looks along `+x` and up is `+z`. This is pure geometry (`stitch/equirectangular`), invertible away
   from the poles and the wrap seam.
-- **Stabilization composes by rotation, not by its own code.** The output direction is rotated by the
-  per-frame stabilization correction (ADR 0006) into the camera frame before the lenses are
+- **Stabilization composes by rotation, not by its own code.** The output direction is rotated by
+  the per-frame stabilization correction (ADR 0006) into the camera frame before the lenses are
   consulted. That rotation is the existing quaternion `rotate`, so the stitch geometry takes a
   camera-frame direction and owns no stabilization logic.
 - **Lens selection and a margin-weighted feather.** `stitch/stitchSample` projects the direction
@@ -28,15 +29,15 @@ the reference the GPU shader implements.
 
 ## Consequences
 
-- With the ONE R's overlapping lenses the two margins give a linear cross-fade through the seam; it
-  is a partition of unity over the whole sphere, proven by a test summing the weights to one for any
-  output direction.
-- The feather is deliberately simple. Exposure is matched separately: `stitch/estimateGains` averages
-  what each lens records over the overlap and scales each lens, per channel, onto the geometric mean,
-  which removes the brightness and colour step between the lenses (on the ONE R the two disagree by
-  about a quarter, differently per channel). Vignetting is corrected before that:
-  `stitch/estimateVignetting` measures the rim falloff from how the two lenses' brightness ratio
-  varies across the overlap (one lens is nearer its rim than the other there), and
+- With the ONE R's overlapping lenses the two margins give a cross-fade through the seam (eased by
+  a smoothstep, ADR 0019); it is a partition of unity over the whole sphere, proven by a test
+  summing the weights to one for any output direction.
+- The feather is deliberately simple. Exposure is matched separately: `stitch/estimateGains`
+  averages what each lens records over the overlap and scales each lens, per channel, onto the
+  geometric mean, which removes the brightness and colour step between the lenses (on the ONE R
+  the two disagree by about a quarter, differently per channel). Vignetting is corrected before
+  that: `stitch/estimateVignetting` measures the rim falloff from how the two lenses' brightness
+  ratio varies across the overlap (one lens is nearer its rim than the other there), and
   `stitch/devignette` lifts each lens by the inverse. The overlap only spans the rim, so the falloff
   is applied as a hinge, `exp(-k * (reach^2 - start^2))` beyond the overlap's innermost reach and
   nothing inside it: a single `exp(-k * reach^2)` curve extrapolated the steep rim slope into the

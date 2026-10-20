@@ -7,9 +7,9 @@ Status: accepted (2026-10-20)
 With the vignetting measured (ADR 0017), a colour step still shows across the seam in the sky
 where one lens faces the sun: that lens's sky carries glare, a haze of about the same amount in
 every channel, while the other's does not. One gain per lens (ADR 0008) scales a whole lens and
-cannot follow a difference that is additive and changes around the seam. A first attempt at a
-per-direction ratio, read from one texel per direction, was too noisy where a jumper or a helmet
-sits on the seam (the lenses see different things there through parallax) and could not follow an
+cannot follow a difference that is additive and changes around the seam. A per-direction ratio,
+read from one texel per direction, is too noisy where a person or the camera's mount
+sits on the seam (the lenses see different things there through parallax) and cannot follow an
 added haze.
 
 ## Decision
@@ -31,7 +31,8 @@ added haze.
 
 ## Consequences
 
-- On the ONE R freefall footage the bright band along the seam in a sun-facing sky is mostly gone;
+- On ONE R freefall footage the field removes most of the bright band along the seam in a
+  sun-facing sky;
   under canopy, with little glare, the field changes nothing visible.
 - It corrects colour, not geometry: a near object on the seam still shows parallax.
 - Only two-lens cameras have a seam field.

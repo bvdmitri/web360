@@ -16,7 +16,7 @@ import { seconds, type Seconds } from '../shared/units/units';
  */
 export type Stabilization = 'off' | 'lock' | 'horizon' | 'smooth' | 'follow';
 
-/** The view a rendition shows and how strongly `smooth` smooths it. */
+/** The view a rendition shows, and the time constant `smooth` and `follow` smooth it with. */
 export interface ViewOptions {
   readonly stabilization: Stabilization;
   readonly smoothing?: Seconds;

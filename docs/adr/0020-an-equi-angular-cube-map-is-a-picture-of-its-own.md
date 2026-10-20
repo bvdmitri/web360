@@ -4,7 +4,7 @@ Status: accepted (2026-10-20)
 
 ## Context
 
-ADR 0003 left the model's optics fisheye-shaped until a second vendor arrived. The GoPro MAX and
+ADR 0003's lens optics are fisheye-shaped. The GoPro MAX and
 MAX2 stitch their two lenses in the camera and store the sphere as an equi-angular cube map split
 across two video tracks (FORMAT-gopro.md). There is no lens to model and no seam for web360 to
 make; a frame only has to be read back out of the cube, apart from the narrow band where the
@@ -27,14 +27,15 @@ camera's own seam is stored twice.
 - **`stitch/packCube.ts`** packs a cube-map frame into four-float slots (`CUBE_LAYOUT`), and the
   WebGPU adapter's `createCubeRenderer` draws it, checked against `renderCubeMap` on Dawn. It
   shares its full-screen pass (`pass.ts`) with the stitcher.
-- A recording opened by a vendor reader will say which picture it is, lenses or a cube map; the
-  lens stitch is unchanged.
+- A recording opened by a vendor reader says which picture it is: `OpenedRecording.cube` is set
+  for a cube map, with `recording.lenses` and `images` empty, and absent for lenses, which the lens
+  stitch renders.
 
 ## Consequences
 
 - A cube-map camera skips the colour work of the lens stitch: the camera already matched its
   lenses, and only the band's two copies are blended.
-- The original MAX takes the same order and frames as the MAX2, stated publicly but not yet
-  measured on its frames.
+- The original MAX takes the same order and frames as the MAX2, stated publicly; they are
+  provisional, not measured on its frames.
 - `stitch/goproPreview.test.ts` renders a GoPro recording's moment to a PNG for inspection
   (`WEB360_GOPRO_PREVIEW`).
