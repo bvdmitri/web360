@@ -25,6 +25,9 @@ these pages (the design and the file formats).
 - **Decode on WebCodecs** (`packages/adapters/webcodecs`).
 - **`openRendition`** (`@bvdmitri/web360` on npm): the files of a recording in, stitched and
   stabilized equirectangular `VideoFrame`s out (ADR 0015).
+- **Views** (`view/`, `createViewer`, `createReframer`): flat views of an equirectangular video
+  with pan, tilt, roll, a field of view and a lens distance, five lens presets, and a keyframed
+  path between views (ADR 0024, 0025), for looking around and for exporting a flat video.
 
 ## What is next
 

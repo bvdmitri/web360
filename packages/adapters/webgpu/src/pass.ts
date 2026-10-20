@@ -20,21 +20,31 @@ interface Resources {
   readonly sampler: GPUSampler;
   readonly packed: { buffer: GPUBuffer | undefined };
   readonly missing: string;
+  readonly textures: number;
+}
+
+/**
+ * The shader of a {@link Pass} and how it reads: its WGSL, the target format, the error for a frame
+ * without a texture, how many textures it binds (two unless said) and how its sampler addresses
+ * them (clamped to the edge unless said).
+ */
+export interface PassShader {
+  readonly code: string;
+  readonly format: GPUTextureFormat;
+  readonly missing: string;
+  readonly textures?: 1 | 2;
+  readonly sampler?: GPUSamplerDescriptor;
 }
 
 /**
  * Creates a full-screen pass of a shader that reads a packed storage buffer, a linear sampler and
- * up to two textures (bindings 0 to 3), into textures of `format`.
+ * one or two textures (bindings 0 to 3), into textures of `format`.
  *
- * @remarks The shape the stitch and the cube-map render share: a full-screen triangle whose
- * fragments are the output pixels. A frame with one texture binds it to both texture slots. Each
- * `render` submits its own work; the packed buffer is reused while it fits. `missing` is the error
- * message for a frame without a texture.
+ * @remarks The shape the stitch, the cube-map render and the view share: a full-screen triangle
+ * whose fragments are the output pixels. A two-texture pass given a frame with one binds it to both
+ * slots. Each `render` submits its own work; the packed buffer is reused while it fits.
  */
-export function createPass(
-  device: GPUDevice,
-  shader: { readonly code: string; readonly format: GPUTextureFormat; readonly missing: string },
-): Pass {
+export function createPass(device: GPUDevice, shader: PassShader): Pass {
   const module = device.createShaderModule({ code: shader.code });
   const resources: Resources = {
     device,
@@ -44,9 +54,14 @@ export function createPass(
       fragment: { module, entryPoint: 'fragmentMain', targets: [{ format: shader.format }] },
       primitive: { topology: 'triangle-list' },
     }),
-    sampler: device.createSampler({ magFilter: 'linear', minFilter: 'linear' }),
+    sampler: device.createSampler({
+      magFilter: 'linear',
+      minFilter: 'linear',
+      ...shader.sampler,
+    }),
     packed: { buffer: undefined },
     missing: shader.missing,
+    textures: shader.textures ?? 2,
   };
   return {
     render: (frame, target): void => {
@@ -61,14 +76,15 @@ export function createPass(
 function bindFrame(resources: Resources, frame: PassFrame): GPUBindGroup {
   const [first, second = first] = frame.textures;
   if (first === undefined || second === undefined) throw new Error(resources.missing);
+  const entries: GPUBindGroupEntry[] = [
+    { binding: 0, resource: { buffer: upload(resources, frame.packed) } },
+    { binding: 1, resource: resources.sampler },
+    { binding: 2, resource: first.createView() },
+  ];
+  if (resources.textures === 2) entries.push({ binding: 3, resource: second.createView() });
   return resources.device.createBindGroup({
     layout: resources.pipeline.getBindGroupLayout(0),
-    entries: [
-      { binding: 0, resource: { buffer: upload(resources, frame.packed) } },
-      { binding: 1, resource: resources.sampler },
-      { binding: 2, resource: first.createView() },
-      { binding: 3, resource: second.createView() },
-    ],
+    entries,
   });
 }
 

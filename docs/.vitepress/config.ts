@@ -67,6 +67,7 @@ export default defineConfig({
           items: [
             { text: 'Getting started', link: '/guide/getting-started' },
             { text: 'Examples', link: '/guide/examples' },
+            { text: 'Looking around and reframing', link: '/guide/views' },
             { text: 'Options and errors', link: '/guide/options' },
             { text: 'Cameras', link: '/guide/cameras' },
             { text: 'Roadmap', link: '/roadmap' },

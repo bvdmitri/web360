@@ -4,7 +4,10 @@
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": ["@webgpu/types"],
     "noEmit": true,
-    "paths": { "@bvdmitri/web360": ["../../../packages/web360/src/index.ts"] }
+    "paths": {
+      "@bvdmitri/web360": ["../../../packages/web360/src/index.ts"],
+      "@bvdmitri/web360/view": ["../../../packages/web360/src/view.ts"]
+    }
   },
   "include": ["*.ts"]
 }

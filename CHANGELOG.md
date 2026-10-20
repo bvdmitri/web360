@@ -6,6 +6,18 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-20
+
+### Added
+
+- Flat views of an equirectangular 360 video: a `View` of pan, tilt, roll, field of view and lens
+  distance, five lens presets (`linear`, `dewarp`, `ultra`, `mega`, `tinyPlanet`) and `clampView`.
+- `viewAt`: the view along a keyframed path, smooth through the keyframes without overshooting.
+- `createViewer`: looks around in a `<video>` on a WebGPU canvas, also from the lighter
+  `@bvdmitri/web360/view` entry.
+- `createReframer`: turns decoded 360 frames into flat views of them, for exporting a reframed
+  video.
+
 ## [0.5.1] - 2026-10-20
 
 ### Changed
