@@ -1,8 +1,9 @@
 name: Release
 
-# One tag releases a version everywhere: pushing vX.Y.Z publishes @bvdmitri/web360 X.Y.Z to npm
-# with provenance (npm trusted publishing, so no token is stored) and creates the GitHub Release
-# from the version's CHANGELOG section. Safe to re-run: a version already on npm is not published
+# One tag releases a version everywhere: pushing vX.Y.Z stages @bvdmitri/web360 X.Y.Z on npm with
+# provenance (npm trusted publishing, so no token is stored) and creates the GitHub Release from
+# the version's CHANGELOG section. A maintainer then approves the staged version on npmjs.com, with
+# 2FA, and it goes live; CI cannot approve. Safe to re-run: a version already on npm is not staged
 # again, and an existing Release is left alone. See docs/guide/releasing.md.
 on:
   push:
@@ -56,10 +57,10 @@ jobs:
         run: pnpm install --frozen-lockfile
       - if: steps.version.outputs.published == 'false'
         run: pnpm verify
-      - name: Publish to npm
+      - name: Stage on npm, for a maintainer to approve
         if: steps.version.outputs.published == 'false'
         working-directory: packages/web360
-        run: npm publish --provenance --access public
+        run: npm stage publish --provenance --access public
       - name: Create the GitHub Release
         run: |
           if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then

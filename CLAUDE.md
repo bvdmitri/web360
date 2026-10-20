@@ -68,8 +68,9 @@ is (rule 5).
     commit.
 15. **Keep `CHANGELOG.md` current** for every user-visible change, and release by tag: bump
     `packages/web360/package.json`, name the `[Unreleased]` section for the version, and push a
-    `vX.Y.Z` tag. The release workflow publishes to npm and creates the GitHub Release; a tag is
-    not a release until both exist (docs/guide/releasing.md).
+    `vX.Y.Z` tag. The release workflow stages the version on npm and creates the GitHub Release,
+    and a maintainer approves the staged version with 2FA; a tag is not a release until both
+    are done (docs/guide/releasing.md).
 
 ## Commands
 
