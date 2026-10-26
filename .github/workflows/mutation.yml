@@ -2,6 +2,8 @@ name: Mutation tests
 
 # Stryker mutates the core and fails below 80% killed mutants. Too slow for every push, it runs
 # weekly and on demand; the incremental file carried between runs keeps each to what changed.
+# It mutates the sources in place (stryker.config.json), since the tests read the fixtures in the
+# repository's test/fixtures by a path relative to themselves.
 
 on:
   schedule:
