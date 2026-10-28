@@ -42,7 +42,7 @@
     "@web360/core": "workspace:*",
     "@web360/webcodecs": "workspace:*",
     "@web360/webgpu": "workspace:*",
-    "tsdown": "0.23.1",
+    "tsdown": "0.23.2",
     "vitest": "4.1.11",
     "webgpu": "0.6.1"
   },
