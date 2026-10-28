@@ -2,6 +2,8 @@ name: Mutation tests
 
 # Stryker mutates the core and fails below 80% killed mutants. Too slow for every push, it runs
 # weekly and on demand; the incremental file carried between runs keeps each to what changed.
+# It mutates the sources in place (stryker.config.json), since the tests read the fixtures in the
+# repository's test/fixtures by a path relative to themselves.
 
 on:
   schedule:
@@ -15,7 +17,8 @@ jobs:
   mutate:
     name: Mutation tests of the core
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # A full run, with no incremental file to start from, takes over an hour on a runner.
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

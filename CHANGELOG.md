@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.6.1] - 2026-10-28
+
+### Changed
+
+- Built with tsdown 0.23.1, and the development tools updated (eslint, typescript-eslint,
+  dependency-cruiser, typedoc-plugin-markdown).
+
 ## [0.6.0] - 2026-10-20
 
 ### Added
@@ -106,6 +113,8 @@ All notable changes to this project are documented here. The format follows
 - `Web360Error` codes for what stops a rendition: no WebGPU, no WebCodecs, an unsupported codec, a
   missing lens file, an unreadable recording, a decode failure.
 
+[0.6.1]: https://github.com/bvdmitri/web360/releases/tag/v0.6.1
+[0.6.0]: https://github.com/bvdmitri/web360/releases/tag/v0.6.0
 [0.5.1]: https://github.com/bvdmitri/web360/releases/tag/v0.5.1
 [0.5.0]: https://github.com/bvdmitri/web360/releases/tag/v0.5.0
 [0.4.3]: https://github.com/bvdmitri/web360/releases/tag/v0.4.3
