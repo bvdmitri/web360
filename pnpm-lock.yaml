@@ -156,8 +156,8 @@ importers:
         specifier: 0.1.74
         version: 0.1.74
       mediabunny:
-        specifier: 1.60.0
-        version: 1.60.0
+        specifier: 1.64.0
+        version: 1.64.0
       vitest:
         specifier: 4.1.11
         version: 4.1.11(@types/node@26.6.1)(@vitest/coverage-istanbul@4.1.11)(vite@8.3.4(@types/node@26.6.1)(yaml@2.9.1))
@@ -2317,8 +2317,8 @@ packages:
   mdurl@2.1.0:
     resolution: {integrity: sha512-1+HBaOx0zi/dQWht8rNv9MYf9qqpqL/kxI0hXImU6Y547zM6Sni8BQibt7ifgMcYtQg41ao3Ivd6cnSM86inpg==}
 
-  mediabunny@1.60.0:
-    resolution: {integrity: sha512-CRQ/2D+qUF9w2IyjbjTxxSLEG+PeWeD4whb43UpUBpeNomWb/ffn+ngKgqJSPZ+bmO66MX2yBJQITZ6ijfRjug==}
+  mediabunny@1.64.0:
+    resolution: {integrity: sha512-ILat5qSwfmZjnYhk7Dc8uEvEQNtzXNxUVyfxR9Fp6JRa8Axsg5xE1EXwCTOzXJHhH/a2eyk6sZ1ffivCk4rIXg==}
 
   micromark-core-commonmark@2.0.4:
     resolution: {integrity: sha512-wxEeE8v8XVvOrxn1TZj74qYhAtTQsSqufHVS3uNVyT1MupXxhyaHk8/9xDNPh9BmL77QNDgWTkZ3RsYHB2ry7w==}
@@ -5264,7 +5264,7 @@ snapshots:
 
   mdurl@2.1.0: {}
 
-  mediabunny@1.60.0:
+  mediabunny@1.64.0:
     dependencies:
       '@types/dom-mediacapture-transform': 0.1.12
       '@types/dom-webcodecs': 0.1.13
