@@ -10,7 +10,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@types/node": "26.6.1",
+    "@types/node": "26.6.6",
     "@webgpu/types": "0.1.74",
     "mediabunny": "1.60.0",
     "vitest": "4.1.11"

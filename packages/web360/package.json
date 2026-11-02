@@ -38,7 +38,7 @@
     "@webgpu/types": "0.1.74"
   },
   "devDependencies": {
-    "@types/node": "26.6.1",
+    "@types/node": "26.6.6",
     "@web360/core": "workspace:*",
     "@web360/webcodecs": "workspace:*",
     "@web360/webgpu": "workspace:*",
