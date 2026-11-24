@@ -1,7 +1,8 @@
 # ADR 0007: Equidistant fisheye lens optics
 
 Status: accepted (2026-10-19), the ONE R values measured on ONE R footage, the Euler order
-provisional; the ONE R's coverage set by ADR 0019
+provisional; the ONE R's coverage set by ADR 0019; how a body's stated rolls face its lenses set by
+ADR 0026
 
 ## Context
 

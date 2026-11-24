@@ -6,6 +6,16 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.6.2] - 2026-11-24
+
+### Fixed
+
+- Insta360 X5 recordings stitch with the two lenses facing apart. The reader placed both lenses on
+  one hemisphere, which left half of the frame black and the other half doubled. The X5's IMU
+  alignment is its own, so stabilized and levelled views hold the horizon.
+- A calibration whose lens rolls fit no known layout is refused with `UnsupportedCalibrationError`
+  instead of being stitched wrongly.
+
 ## [0.6.1] - 2026-10-28
 
 ### Changed
@@ -113,6 +123,7 @@ All notable changes to this project are documented here. The format follows
 - `Web360Error` codes for what stops a rendition: no WebGPU, no WebCodecs, an unsupported codec, a
   missing lens file, an unreadable recording, a decode failure.
 
+[0.6.2]: https://github.com/bvdmitri/web360/releases/tag/v0.6.2
 [0.6.1]: https://github.com/bvdmitri/web360/releases/tag/v0.6.1
 [0.6.0]: https://github.com/bvdmitri/web360/releases/tag/v0.6.0
 [0.5.1]: https://github.com/bvdmitri/web360/releases/tag/v0.5.1
