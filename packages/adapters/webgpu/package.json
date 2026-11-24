@@ -20,7 +20,7 @@
     "@web360/core": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "26.6.1",
+    "@types/node": "26.6.6",
     "@webgpu/types": "0.1.74",
     "vitest": "4.1.11",
     "webgpu": "0.6.1"
