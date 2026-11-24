@@ -9,6 +9,11 @@
       "origin": "A GoPro MAX2 (firmware H24.02, 8K mode) recording its .360: two equi-angular cube-map HEVC tracks with a GPMF telemetry track.",
       "licence": "A recording made for this project, de-identified for use as a test fixture.",
       "covers": "The ISO base media container (two 5888x1920 cube-map video tracks, audio, a timecode track and the GPMF telemetry track) and the GPMF data itself (accelerometer, gyroscope, orientation, gravity and exposure). It is a structural extract: only the GPMF samples are kept, with the video and audio samples dropped, so it has no frames and no sound. Every record and box that identifies the camera, the recording or a person (CASN, CINF, MUID, CPID, CDAT, FACE, GPS5, GPS9, and the CAME, MUID and GUMI boxes) is zeroed by `scrubbed` in tools/checks/src/fixtures.ts, which the repository checks enforce."
+    },
+    "insta360/x5-single-00.insv": {
+      "origin": "An Insta360 X5 (firmware v1.14.21) single-file recording: the _00_ file, which holds both lenses and the trailer.",
+      "licence": "A recording made for this project, de-identified for use as a test fixture.",
+      "covers": "The ISO base media container with two HEVC 3840x3840 video tracks (a track per lens) and AAC audio, and the Insta360 indexed trailer inside an inst box (info, gyro, exposure and smaller records). It is a structural extract: the media is dropped, the moov's udta (an embedded thumbnail) is zeroed, every trailer record but the info, gyro, exposure and record 10 is zeroed, and the serial is replaced, so it has no decodable frames and holds no faces."
     }
   }
 }

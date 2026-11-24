@@ -1,10 +1,11 @@
 import type { CameraRecording, LensOptics, Vignetting } from '../../model/recording';
 import type { ByteReader } from '../../shared/binary/byteReader';
-import { fromRotationVector } from '../../shared/math/quaternion';
+import { fromRotationVector, multiply, type Quaternion } from '../../shared/math/quaternion';
 import { degrees, microseconds, seconds } from '../../shared/units/units';
 import type { Region } from '../mp4/box';
 import { readCalibration, type LensPose } from './calibration';
 import { readExposure } from './exposure';
+import { facingApart } from './facing';
 import { readGyro } from './gyro';
 import { readInfo } from './info';
 import { readTrailer, type TrailerRecord } from './trailer';
@@ -34,6 +35,17 @@ const COVERAGE = degrees(COVERAGE_DEGREES);
 // that keeps a world-locked view stillest through fast canopy turns (ADR 0010).
 const IMU_TO_CAMERA = fromRotationVector([-Math.PI / 2, 0, 0]);
 
+// The X5's IMU sits a further quarter turn about Z (the lenses' axis) from the ONE R's: IMU x along
+// the lens frame's y and IMU z along its -x. Measured on X5 footage the same way, where it keeps a
+// locked view stillest across nine moments of a jump and levels the horizon under canopy (ADR 0026).
+const X5_IMU_TO_CAMERA = multiply(fromRotationVector([0, 0, Math.PI / 2]), IMU_TO_CAMERA);
+
+// The bodies measured with their own IMU alignment; every other body takes the ONE R's,
+// provisionally (rule 5).
+const IMU_ALIGNMENTS: ReadonlyMap<string, Quaternion> = new Map([
+  ['Insta360 X5', X5_IMU_TO_CAMERA],
+]);
+
 /**
  * Reads an Insta360 recording into the vendor-neutral {@link CameraRecording}.
  *
@@ -51,10 +63,10 @@ export function readInsta360Recording(reader: ByteReader): CameraRecording {
     model: info.model,
     frameRate: info.frameRate,
     frame: { width: info.width, height: info.height },
-    lenses: readCalibration(info.calibration).lenses.map((pose) => toOptics(pose)),
+    lenses: facingApart(readCalibration(info.calibration).lenses).map((pose) => toOptics(pose)),
     angularVelocity: imu.angularVelocity,
     acceleration: imu.acceleration,
-    imuToCamera: IMU_TO_CAMERA,
+    imuToCamera: IMU_ALIGNMENTS.get(info.model) ?? IMU_TO_CAMERA,
     exposures: readExposure(reader, regionById(records, EXPOSURE)),
     rollingShutter: seconds(info.rollingShutterMs / MS_PER_SECOND),
     captureClock: microseconds(info.firstFrameTimestamp),

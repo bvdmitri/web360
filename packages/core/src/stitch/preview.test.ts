@@ -1,9 +1,12 @@
 import { execFileSync } from 'node:child_process';
 import {
   appendFileSync,
+  closeSync,
   existsSync,
   mkdirSync,
+  openSync,
   readFileSync,
+  readSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -16,7 +19,7 @@ import { describe, expect, it } from 'vitest';
 import { readCalibration } from '../format/insta360/calibration';
 import { readInfo } from '../format/insta360/info';
 import { readInsta360Recording } from '../format/insta360/recording';
-import { readTrailer } from '../format/insta360/trailer';
+import { readTrailer, TRAILER_FOOTER_SIZE, trailerLength } from '../format/insta360/trailer';
 import type { CameraRecording, LensOptics } from '../model/recording';
 import { axisAlignments } from '../motion/axes';
 import { levelOrientation } from '../motion/level';
@@ -80,9 +83,15 @@ const tints: Rgb[] = [
 ];
 const black: LensSampler = () => [0, 0, 0];
 
+// Where one lens's video is: a file and its video stream (a single-file body keeps both in one).
+interface LensInput {
+  readonly file: string;
+  readonly stream: number;
+}
+
 interface Source {
   readonly insv00: string;
-  readonly insv10: string;
+  readonly inputs: readonly LensInput[];
   readonly recording: CameraRecording;
   readonly canvas: readonly [number, number];
   readonly directory: string;
@@ -115,8 +124,25 @@ const evenlyLit = (optics: LensOptics): LensOptics => ({
   orientation: optics.orientation,
 });
 
+// The trailer at the file's end, read without the media (a single-file recording passes 2 GiB).
+const readTail = (file: string): ByteReader => {
+  const handle = openSync(file, 'r');
+  try {
+    const size = statSync(file).size;
+    const tail = (length: number): Uint8Array => {
+      const bytes = new Uint8Array(length);
+      readSync(handle, bytes, 0, length, size - length);
+      return bytes;
+    };
+    const footer = ByteReader.of(tail(TRAILER_FOOTER_SIZE));
+    return ByteReader.of(tail(trailerLength(footer)));
+  } finally {
+    closeSync(handle);
+  }
+};
+
 const loadSource = (insv00: string, directory: string): Source => {
-  const reader = ByteReader.of(readFileSync(insv00));
+  const reader = readTail(insv00);
   const read = readInsta360Recording(reader);
   // WEB360_PREVIEW_VIGNETTE=0 renders the lenses as recorded, without their measured falloff.
   const recording =
@@ -126,17 +152,41 @@ const loadSource = (insv00: string, directory: string): Source => {
   const infoRecord = readTrailer(reader).records.find((record) => record.id === 1);
   if (infoRecord === undefined) throw new Error('the recording has no info record');
   const canvas = readCalibration(readInfo(reader, infoRecord.region).calibration).canvas;
-  return { insv00, insv10: insv00.replaceAll('_00_', '_10_'), recording, canvas, directory };
+  return { insv00, inputs: lensInputs(insv00), recording, canvas, directory };
+};
+
+// One lens per video stream when the file holds two (the X5), else the split `_00_`/`_10_` pair.
+const lensInputs = (insv00: string): LensInput[] => {
+  const probe = ['-v', 'error', '-select_streams', 'v', '-show_entries', 'stream=index'];
+  const streams = execFileSync('ffprobe', [...probe, '-of', 'csv=p=0', insv00], {
+    encoding: 'utf8',
+  });
+  if (streams.trim().split('\n').length > 1) {
+    return [
+      { file: insv00, stream: 0 },
+      { file: insv00, stream: 1 },
+    ];
+  }
+  return [
+    { file: insv00, stream: 0 },
+    { file: insv00.replaceAll('_00_', '_10_'), stream: 0 },
+  ];
+};
+
+const lensInput = (source: Source, lens: number): LensInput => {
+  const input = source.inputs[lens];
+  if (input === undefined) throw new Error(`no video for lens ${lens}`);
+  return input;
 };
 
 const decodeFrames = (
-  file: string,
+  input: LensInput,
   at: number,
   decode: { count: number; size: number },
 ): Uint8Array[] => {
   const out = path.join(os.tmpdir(), `web360-decode-${process.pid}.rgb`);
   const scale = `scale=${decode.size}:${decode.size}`;
-  const input = ['-v', 'error', '-y', '-ss', String(at), '-i', file, '-map', '0:v:0'];
+  const from = ['-v', 'error', '-y', '-ss', String(at), '-i', input.file];
   const output = [
     '-frames:v',
     String(decode.count),
@@ -148,7 +198,7 @@ const decodeFrames = (
     'rgb24',
     out,
   ];
-  execFileSync('ffmpeg', [...input, ...output]);
+  execFileSync('ffmpeg', [...from, '-map', `0:v:${input.stream}`, ...output]);
   const all = readFileSync(out);
   rmSync(out);
   const frameBytes = decode.size * decode.size * 3;
@@ -181,8 +231,8 @@ const samplersFor = (
 };
 
 const samplersAt = (source: Source, at: number, size: number): LensSampler[] => {
-  const lens0 = decodeFrames(source.insv00, at, { count: 1, size });
-  const lens1 = decodeFrames(source.insv10, at, { count: 1, size });
+  const lens0 = decodeFrames(lensInput(source, 0), at, { count: 1, size });
+  const lens1 = decodeFrames(lensInput(source, 1), at, { count: 1, size });
   return onlyChosen(samplersFor(source, [...lens0, ...lens1], size));
 };
 
@@ -476,8 +526,8 @@ const SHUTTER_CANDIDATES: readonly (ShutterOption | undefined)[] = [
 
 const searchShutter = (source: Source, at: number, outBase: string): void => {
   const decode = { count: 2, size: TEMPORAL.decode };
-  const [first0, second0] = decodeFrames(source.insv00, at, decode);
-  const [first1, second1] = decodeFrames(source.insv10, at, decode);
+  const [first0, second0] = decodeFrames(lensInput(source, 0), at, decode);
+  const [first1, second1] = decodeFrames(lensInput(source, 1), at, decode);
   if (
     first0 === undefined ||
     second0 === undefined ||
@@ -516,8 +566,8 @@ const renderClip = (
   context: { at: number; count: number; out: string },
 ): void => {
   const decode = { count: context.count, size: CLIP.decode };
-  const lens0 = decodeFrames(source.insv00, context.at, decode);
-  const lens1 = decodeFrames(source.insv10, context.at, decode);
+  const lens0 = decodeFrames(lensInput(source, 0), context.at, decode);
+  const lens1 = decodeFrames(lensInput(source, 1), context.at, decode);
   const lenses = source.recording.lenses;
   const raw = `${context.out}.rgb`;
   let corrections: Corrections | undefined;
@@ -615,8 +665,8 @@ const poolPairs = (
 const FLAT_SIZE = 512;
 const FLAT_BINS = 105;
 const flatField = (source: Source, out: string): void => {
-  const profiles = [source.insv00, source.insv10].map((file, lens) => {
-    const frames = everySecond(file, FLAT_SIZE);
+  const profiles = source.inputs.map((input, lens) => {
+    const frames = everySecond(input, FLAT_SIZE);
     const optics = source.recording.lenses[lens];
     if (optics === undefined) throw new Error(`no lens ${lens}`);
     return radialProfile(frames, { optics, lens, canvas: source.canvas });
@@ -624,11 +674,12 @@ const flatField = (source: Source, out: string): void => {
   writeFileSync(`${out}.flatfield.json`, JSON.stringify(profiles, undefined, 2));
 };
 
-const everySecond = (file: string, size: number): Uint8Array[] => {
+const everySecond = (input: LensInput, size: number): Uint8Array[] => {
   const raw = path.join(os.tmpdir(), `web360-flat-${process.pid}.rgb`);
   const filter = `fps=1,scale=${size}:${size}`;
-  const input = ['-v', 'error', '-y', '-i', file, '-map', '0:v:0', '-vf', filter];
-  execFileSync('ffmpeg', [...input, '-f', 'rawvideo', '-pix_fmt', 'rgb24', raw]);
+  const map = ['-map', `0:v:${input.stream}`, '-vf', filter];
+  const from = ['-v', 'error', '-y', '-i', input.file, ...map];
+  execFileSync('ffmpeg', [...from, '-f', 'rawvideo', '-pix_fmt', 'rgb24', raw]);
   const all = readFileSync(raw);
   rmSync(raw);
   const frameBytes = size * size * 3;
@@ -675,6 +726,44 @@ const radialProfile = (
   }));
 };
 
+// Readings of a calibration that states each lens's roll about a quarter turn (the X5): the roll
+// taken as the lens's facing (180 degrees for lens 0, 0 for lens 1) plus or minus its deviation from
+// the quarter turn, with a small extra roll on the second lens swept around it. A coarse search
+// first settled that the tracks hold the lenses in calibration order and that the second lens
+// needs no turn about its own axis. Ranked by the seam correlation.
+const QUARTER_TURN = 90;
+const FACING = [180, 0];
+const POSE_SWEEP = { from: -3, to: 3, step: 0.25 };
+const facing = (
+  optics: LensOptics,
+  lens: number,
+  rule: { sign: number; extra: number },
+): LensOptics => ({
+  ...optics,
+  orientation: {
+    ...optics.orientation,
+    roll: degrees(
+      (FACING[lens] ?? 0) + rule.sign * (optics.orientation.roll - QUARTER_TURN) + rule.extra,
+    ),
+  },
+});
+
+const searchPose = (source: Source, at: number, out: string): void => {
+  const samplers = samplersAt(source, at, STILL.decode);
+  const ranking = [];
+  for (const sign of [1, -1]) {
+    for (let extra = POSE_SWEEP.from; extra <= POSE_SWEEP.to; extra += POSE_SWEEP.step) {
+      const lenses = source.recording.lenses.map((optics, lens) =>
+        facing(optics, lens, { sign, extra: lens === 1 ? extra : 0 }),
+      );
+      const correlation = seamCorrelation(lenses, devignette(lenses, samplers), SEAM_BAND);
+      ranking.push({ sign, extra, correlation });
+    }
+  }
+  ranking.sort((left, right) => right.correlation - left.correlation);
+  writeFileSync(`${out}.pose.json`, JSON.stringify(ranking, undefined, 2));
+};
+
 const runMeasurements = (source: Source, context: { at: number; out: string }): void => {
   const { at, out } = context;
   if (setting('MOTION_SCAN') !== undefined) scanMotion(source, out);
@@ -682,6 +771,7 @@ const runMeasurements = (source: Source, context: { at: number; out: string }): 
   if (setting('SHUTTER_SEARCH') !== undefined) searchShutter(source, at, out);
   if (setting('VIGNETTE_SCAN') !== undefined) scanVignetting(source, out);
   if (setting('FLAT_FIELD') !== undefined) flatField(source, out);
+  if (setting('POSE_SEARCH') !== undefined) searchPose(source, at, out);
 };
 
 describe('stitch preview (developer harness)', () => {

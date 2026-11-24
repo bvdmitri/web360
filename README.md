@@ -33,6 +33,9 @@ See [packages/web360/README.md](./packages/web360/README.md) for usage, options 
 - **Insta360 ONE R (5.7K 360 lens)**, `.insv`, a single file or a split `_00_`/`_10_` pair:
   measured on ONE R footage and covered by a fixture
   ([docs/FORMAT-insta360.md](./docs/FORMAT-insta360.md)).
+- **Insta360 X5**, `.insv`, the single file with a track per lens: its trailer, lens layout and IMU
+  alignment measured on X5 footage and covered by a fixture; its lens mapping, vignetting and
+  rolling shutter take the ONE R's values, provisionally.
 - **Other Insta360 bodies**: open and stitch with the ONE R's values, which are provisional for
   them.
 - **GoPro MAX2**, `.360`, chapters joined: measured on MAX2 footage
@@ -41,7 +44,7 @@ See [packages/web360/README.md](./packages/web360/README.md) for usage, options 
 - **DJI Osmo 360** (`.osv`): planned, not started.
 
 A camera body is supported once its format is described in `docs/` and covered by a test fixture.
-The ONE R and the MAX2 are; the original MAX has no fixture and is provisional, as are the other
+The ONE R, the X5 and the MAX2 are; the original MAX has no fixture and is provisional, as are the other
 Insta360 bodies. See [the roadmap](./docs/roadmap.md) for what is next.
 
 ## Development

@@ -81,8 +81,10 @@ in a dedicated Web Worker so stitching never blocks the page.
 ## Cameras
 
 The Insta360 ONE R (5.7K 360 lens) is measured: its lens field of view, its IMU alignment and its
-rolling shutter come from real footage. Other Insta360 bodies open and stitch with the ONE R's
-values until footage from them sets their own.
+rolling shutter come from real footage. The X5 is measured for the way its lenses face and for its
+IMU alignment; its lens field of view, vignetting and rolling shutter take the ONE R's values for
+now. Other Insta360 bodies open and stitch with the ONE R's values until footage from them sets
+their own.
 
 The GoPro MAX2 is measured: its cube-map layout, the alignment of its gyro to the picture and its
 telemetry delay come from real footage, and it is stabilized by its gyro, levelled by the gravity it

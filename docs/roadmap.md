@@ -9,7 +9,10 @@ these pages (the design and the file formats).
   trailer, the info, motion and exposure records and the v1 calibration, a single file or a split
   `_00_`/`_10_` pair. The ONE R with its 5.7K 360 lens is measured: its field of view, coverage,
   vignetting, IMU alignment and rolling-shutter order come from ONE R footage, and a fixture covers
-  it. Other Insta360 bodies open and stitch with the ONE R's values, which are provisional for them.
+  it. The X5 is measured for its indexed trailer, its track per lens, its lens rolls (the
+  quarter-turn layout, ADR 0026) and its IMU alignment, and a fixture covers it; its optics and
+  rolling shutter take the ONE R's values. Other Insta360 bodies open and stitch with the ONE R's
+  values, which are provisional for them.
 - **GoPro (`.360`)** (`format/gopro`, [FORMAT-gopro.md](./FORMAT-gopro.md)): the GPMF
   telemetry and the dual-track equi-angular cube map, chapters joined. The MAX2 is measured: its
   cube layout, gyro alignment and telemetry delay come from MAX2 footage. The original MAX opens
@@ -31,9 +34,9 @@ these pages (the design and the file formats).
 
 ## What is next
 
-- **Insta360 breadth**: other bodies from the facts their files state (the indexed trailer, the v2,
-  v3 and v6 calibration layouts, a track per lens), each with its own measured optics and IMU
-  alignment and a fixture.
+- **Insta360 breadth**: the X5's own lens mapping, vignetting and rolling-shutter order, measured on
+  its footage; other bodies from the facts their files state (the v2, v3 and v6 calibration
+  layouts), each with its own measured optics and IMU alignment and a fixture.
 - **DJI Osmo 360 (`.osv`)**: planned, not started; no fixture describes it yet.
 - **CAMM and generic dual-fisheye recordings**: cameras that write the standard camera motion
   metadata track, or a plain dual-fisheye video.
